@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
+name: Orbital Water Skimmer
+cost: 17
+tags: [space]
+active:
+  - "{titanium} {->} {4 heat}"
+  - "(Action: Spend 1 titanium to gain 4 heat.)"
+flavor: The thinnest harvest — a single tanker of stratospheric ice
+number: "003"

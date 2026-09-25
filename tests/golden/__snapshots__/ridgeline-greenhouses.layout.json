@@ -1,0 +1,266 @@
+{
+ "nodes": [
+  {
+   "kind": "rect",
+   "x": 0,
+   "y": 0,
+   "w": 63,
+   "h": 88,
+   "fill": "#ffffff"
+  },
+  {
+   "kind": "backdrop",
+   "x": 2.5200000000000005,
+   "y": 14.639999999999999,
+   "w": 58.17,
+   "h": 44.82000000000001
+  },
+  {
+   "kind": "frame",
+   "color": "green",
+   "artBottom": 58.660000000000004,
+   "seamX": 28.65,
+   "seed": 1128929444
+  },
+  {
+   "kind": "reqbox",
+   "w": 1.86,
+   "max": false
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 5.3,
+   "x": 6.73,
+   "y": 8.47005,
+   "text": "11",
+   "fill": "#000",
+   "anchor": "middle"
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "tags/building.png"
+   },
+   "x": 41.46,
+   "y": 2.07,
+   "w": 9,
+   "h": 9
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "tags/plant.png"
+   },
+   "x": 50.6,
+   "y": 2.07,
+   "w": 9,
+   "h": 9
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 3.5,
+   "x": 6.9964999999999975,
+   "y": 13.874749999999999,
+   "text": "RIDGELINE GREENHOUSES",
+   "fill": "#000",
+   "anchor": "start",
+   "letterSpacing": 0.36
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 2,
+   "x": 31.5,
+   "y": 59.56,
+   "text": "FAN MADE",
+   "fill": "#24770d",
+   "anchor": "middle"
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 1.4,
+   "x": 56.2256,
+   "y": 64.06190000000001,
+   "text": "001",
+   "fill": "#505050",
+   "anchor": "start",
+   "letterSpacing": 0.18
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "VPs/blank.png"
+   },
+   "x": 41.8,
+   "y": 64.6,
+   "w": 18.7,
+   "h": 18.7
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 12.5,
+   "x": 49.7,
+   "y": 78.43124999999999,
+   "text": "1",
+   "fill": "#000",
+   "anchor": "start",
+   "outline": {
+    "inset": 0.175,
+    "bands": [
+     {
+      "color": "#fff000",
+      "width": 0.175
+     },
+     {
+      "color": "#f78c00",
+      "width": 0.2
+     }
+    ]
+   }
+  },
+  {
+   "kind": "text",
+   "font": "serif",
+   "size": 2.3,
+   "x": 24.374999999999996,
+   "y": 76.30817871093751,
+   "text": "(Increase your plant production 1",
+   "fill": "#111",
+   "anchor": "middle"
+  },
+  {
+   "kind": "text",
+   "font": "serif",
+   "size": 2.3,
+   "x": 24.374999999999996,
+   "y": 79.10817871093751,
+   "text": "step and gain 3 plants.)",
+   "fill": "#111",
+   "anchor": "middle"
+  },
+  {
+   "kind": "rect",
+   "x": 7.074999999999996,
+   "y": 62.21682128906251,
+   "w": 10.5,
+   "h": 10.5,
+   "fill": "#808080",
+   "gradient": "prod-outer"
+  },
+  {
+   "kind": "rect",
+   "x": 7.324999999999996,
+   "y": 62.46682128906251,
+   "w": 10,
+   "h": 10,
+   "fill": "#7a5236",
+   "gradient": "prod-inner"
+  },
+  {
+   "kind": "rect",
+   "x": 7.574999999999996,
+   "y": 62.71682128906251,
+   "w": 9.5,
+   "h": 9.5,
+   "fill": "production-pattern",
+   "patternOrigin": {
+    "x": 7.074999999999996,
+    "y": 62.21682128906251
+   }
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "resources/plant.png"
+   },
+   "x": 8.974999999999996,
+   "y": 64.11682128906251,
+   "w": 6.7,
+   "h": 6.7
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "resources/plant.png"
+   },
+   "x": 19.574999999999996,
+   "y": 64.11682128906251,
+   "w": 6.7,
+   "h": 6.7
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "resources/plant.png"
+   },
+   "x": 27.274999999999995,
+   "y": 64.11682128906251,
+   "w": 6.7,
+   "h": 6.7
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "resources/plant.png"
+   },
+   "x": 34.974999999999994,
+   "y": 64.11682128906251,
+   "w": 6.7,
+   "h": 6.7
+  },
+  {
+   "kind": "rect",
+   "x": 6.724804687499997,
+   "y": 80.80000000000001,
+   "w": 37.0751953125,
+   "h": 0.2,
+   "fill": "#000000"
+  },
+  {
+   "kind": "text",
+   "font": "serifBoldItalic",
+   "size": 2.4,
+   "x": 31.5,
+   "y": 83.5,
+   "text": "Thin air, strong light — the ridge farms drink both",
+   "fill": "#000",
+   "anchor": "middle"
+  }
+ ],
+ "warnings": [],
+ "frame": {
+  "color": "green",
+  "regions": {
+   "artWindow": {
+    "x": 3.3200000000000003,
+    "y": 15.44,
+    "w": 56.57,
+    "h": 43.220000000000006
+   },
+   "bodyTop": 62.2,
+   "bodyBox": {
+    "x": 4.649999999999999,
+    "y": 62.2,
+    "w": 53.7,
+    "h": 21.299999999999997
+   },
+   "fanY": 59.56,
+   "fanColor": "#24770d",
+   "numCenter": {
+    "x": 57.45,
+    "y": 63.56
+   }
+  }
+ }
+}

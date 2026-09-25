@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
+name: Meteor Swarm
+cost: 14
+tags: [space, event]
+body:
+  - "{temperature temperature}"
+  - "{red plant red plant red plant}"
+  - "(Raise temperature 2 steps. Remove up to 3 plants from ANY PLAYER.)"
+number: "002"
+art: { file: double-the-rubble.png, zoom: 1.15 }
+artist: NASA/JPL-Caltech

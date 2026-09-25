@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
+name: Jovian Research Ring
+cost: 25
+tags: [jovian, space, science]
+requirement: "{science-tag science-tag}"
+body:
+  - "[{titanium}] {card card}"
+  - "(Requires 2 science tags. Increase your titanium production 1 step and draw 2 cards.)"
+vp: "1 {/ jovian-tag}"
+flavor: Four billion years of field notes, bound in ore
+number: "005"
+art: double-the-rubble.png
+artist: NASA

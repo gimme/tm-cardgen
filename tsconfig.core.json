@@ -1,0 +1,24 @@
+{
+  // DOM-freeness check for the core engine: src/core must compile with no DOM
+  // lib and no DOM types. `npm run typecheck` runs this alongside the app build.
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.core.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "types": [],
+    "module": "esnext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src/core"],
+  "exclude": ["src/**/*.test.ts"]
+}

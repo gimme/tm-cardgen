@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
+# Text and icons sharing braces
+name: Hired Raiders
+cost: 1
+tags: [event]
+body:
+  - "{STEAL 2} {red steel}"
+  - "{OR STEAL red 3mc}"
+  - "(Steal up to 2 steel, or 3 M€ from any player.)"
+flavor: We have a better use for those resources
+number: "124"

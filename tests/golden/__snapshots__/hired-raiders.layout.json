@@ -1,0 +1,204 @@
+{
+ "nodes": [
+  {
+   "kind": "rect",
+   "x": 0,
+   "y": 0,
+   "w": 63,
+   "h": 88,
+   "fill": "#ffffff"
+  },
+  {
+   "kind": "backdrop",
+   "x": 2.5200000000000005,
+   "y": 15.259999999999998,
+   "w": 58.17,
+   "h": 39.24
+  },
+  {
+   "kind": "frame",
+   "color": "red",
+   "artBottom": 53.7,
+   "seamX": 29.41,
+   "seed": 3296224521
+  },
+  {
+   "kind": "reqbox",
+   "w": 1.86,
+   "max": false
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 5.3,
+   "x": 6.73,
+   "y": 8.47005,
+   "text": "1",
+   "fill": "#000",
+   "anchor": "middle"
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "tags/event.png"
+   },
+   "x": 50.6,
+   "y": 2.07,
+   "w": 9,
+   "h": 9
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 3.7,
+   "x": 16.124899999999997,
+   "y": 14.32645,
+   "text": "HIRED RAIDERS",
+   "fill": "#000",
+   "anchor": "start",
+   "letterSpacing": 0.36
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 2,
+   "x": 31.5,
+   "y": 56.53,
+   "text": "FAN MADE",
+   "fill": "#c36a17",
+   "anchor": "middle"
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 1.4,
+   "x": 56.276700000000005,
+   "y": 58.8019,
+   "text": "124",
+   "fill": "#505050",
+   "anchor": "start",
+   "letterSpacing": 0.18
+  },
+  {
+   "kind": "text",
+   "font": "serif",
+   "size": 2.3,
+   "x": 31.5,
+   "y": 79.10817871093751,
+   "text": "(Steal up to 2 steel, or 3 M€ from any player.)",
+   "fill": "#111",
+   "anchor": "middle"
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 3.9,
+   "x": 18.3362,
+   "y": 73.1899712890625,
+   "text": "OR STEAL",
+   "fill": "#000",
+   "anchor": "start"
+  },
+  {
+   "kind": "halo",
+   "shape": "octagon",
+   "x": 37.5888,
+   "y": 68.4418212890625,
+   "w": 6.7,
+   "h": 6.7,
+   "scale": 1
+  },
+  {
+   "kind": "vector",
+   "icon": "mc",
+   "x": 37.5888,
+   "y": 68.4418212890625,
+   "w": 6.7,
+   "h": 6.7
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 3.7855,
+   "x": 40.9388,
+   "y": 73.1546012890625,
+   "text": "3",
+   "fill": "#000",
+   "anchor": "middle"
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 3.9,
+   "x": 19.351350000000004,
+   "y": 63.7399712890625,
+   "text": "STEAL 2",
+   "fill": "#000",
+   "anchor": "start"
+  },
+  {
+   "kind": "halo",
+   "shape": "box",
+   "x": 36.57365,
+   "y": 58.9918212890625,
+   "w": 6.7,
+   "h": 6.7,
+   "scale": 1
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "resources/steel.png"
+   },
+   "x": 36.57365,
+   "y": 58.9918212890625,
+   "w": 6.7,
+   "h": 6.7
+  },
+  {
+   "kind": "rect",
+   "x": 12.3703125,
+   "y": 80.80000000000001,
+   "w": 38.259375000000006,
+   "h": 0.2,
+   "fill": "#000000"
+  },
+  {
+   "kind": "text",
+   "font": "serifBoldItalic",
+   "size": 2.4,
+   "x": 31.5,
+   "y": 83.5,
+   "text": "We have a better use for those resources",
+   "fill": "#000",
+   "anchor": "middle"
+  }
+ ],
+ "warnings": [],
+ "frame": {
+  "color": "red",
+  "regions": {
+   "artWindow": {
+    "x": 3.3200000000000003,
+    "y": 16.06,
+    "w": 56.57,
+    "h": 37.64
+   },
+   "bodyTop": 58.6,
+   "bodyBox": {
+    "x": 4.649999999999999,
+    "y": 58.6,
+    "w": 53.7,
+    "h": 24.9
+   },
+   "fanY": 56.53,
+   "fanColor": "#c36a17",
+   "numCenter": {
+    "x": 57.45,
+    "y": 58.300000000000004
+   }
+  }
+ }
+}

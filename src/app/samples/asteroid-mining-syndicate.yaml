@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
+name: ASTEROID MINING SYNDICATE
+cost: 17
+tags: [jovian]
+requirement: "[{titanium titanium}]"
+body:
+  - "[{titanium titanium}]"
+  - "(Requires that you have 2 titanium production. Increase your titanium production 2 steps.)"
+vp: 1
+flavor: Your hold on the titanium market tightens
+number: "?01"
+art: double-the-rubble.png

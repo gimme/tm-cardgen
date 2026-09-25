@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
+name: Ridgeline Greenhouses
+cost: 11
+tags: [building, plant]
+body:
+  - "[{plant}] {plant plant plant}"
+  - "(Increase your plant production 1 step and gain 3 plants.)"
+vp: 1
+flavor: Thin air, strong light — the ridge farms drink both
+number: "001"

@@ -1,0 +1,201 @@
+{
+ "nodes": [
+  {
+   "kind": "rect",
+   "x": 0,
+   "y": 0,
+   "w": 63,
+   "h": 88,
+   "fill": "#ffffff"
+  },
+  {
+   "kind": "backdrop",
+   "x": 2.5200000000000005,
+   "y": 32.5,
+   "w": 58.17,
+   "h": 33.800000000000004
+  },
+  {
+   "kind": "frame",
+   "color": "blue",
+   "artBottom": 65.5,
+   "artTop": 33.3,
+   "seamX": 30.15,
+   "seed": 1915671934
+  },
+  {
+   "kind": "reqbox",
+   "w": 1.86,
+   "max": false
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 5.3,
+   "x": 6.73,
+   "y": 8.47005,
+   "text": "8",
+   "fill": "#000",
+   "anchor": "middle"
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "tags/building.png"
+   },
+   "x": 50.6,
+   "y": 2.07,
+   "w": 9,
+   "h": 9
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 3.7,
+   "x": 17.69795,
+   "y": 13.89645,
+   "text": "DUST FILTERS",
+   "fill": "#000",
+   "anchor": "start",
+   "letterSpacing": 0.36
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 2,
+   "x": 31.5,
+   "y": 67.3,
+   "text": "FAN MADE",
+   "fill": "#0c5e84",
+   "anchor": "middle"
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 1.4,
+   "x": 55.9666,
+   "y": 67.45190000000001,
+   "text": "004",
+   "fill": "#505050",
+   "anchor": "start",
+   "letterSpacing": 0.18
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "VPs/blank.png"
+   },
+   "x": 41.8,
+   "y": 64.6,
+   "w": 18.7,
+   "h": 18.7
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 12.5,
+   "x": 49.7,
+   "y": 78.43124999999999,
+   "text": "1",
+   "fill": "#000",
+   "anchor": "start",
+   "outline": {
+    "inset": 0.175,
+    "bands": [
+     {
+      "color": "#fff000",
+      "width": 0.175
+     },
+     {
+      "color": "#f78c00",
+      "width": 0.2
+     }
+    ]
+   }
+  },
+  {
+   "kind": "text",
+   "font": "serif",
+   "size": 2.3,
+   "x": 31.5,
+   "y": 30.783178710937502,
+   "text": "(Effect: When ANY city tile is placed, gain 2 MC.)",
+   "fill": "#111",
+   "anchor": "middle"
+  },
+  {
+   "kind": "halo",
+   "shape": "hexagon",
+   "x": 22.722981872402357,
+   "y": 17.516821289062502,
+   "w": 8.05403625519528,
+   "h": 9.3,
+   "scale": 1
+  },
+  {
+   "kind": "image",
+   "asset": {
+    "type": "asset",
+    "path": "tiles/city.png"
+   },
+   "x": 22.722981872402357,
+   "y": 17.516821289062502,
+   "w": 8.05403625519528,
+   "h": 9.3
+  },
+  {
+   "kind": "vector",
+   "icon": "colon",
+   "x": 32.152018127597636,
+   "y": 20.566821289062503,
+   "w": 0.8,
+   "h": 3.2
+  },
+  {
+   "kind": "vector",
+   "icon": "mc",
+   "x": 33.95201812759764,
+   "y": 18.816821289062503,
+   "w": 6.7,
+   "h": 6.7
+  },
+  {
+   "kind": "text",
+   "font": "proto",
+   "size": 3.7855,
+   "x": 37.302018127597634,
+   "y": 23.529601289062505,
+   "text": "2",
+   "fill": "#000",
+   "anchor": "middle"
+  }
+ ],
+ "warnings": [],
+ "frame": {
+  "color": "blue",
+  "regions": {
+   "artWindow": {
+    "x": 3.3200000000000003,
+    "y": 33.3,
+    "w": 56.57,
+    "h": 32.2
+   },
+   "bodyTop": 70,
+   "bodyBox": {
+    "x": 4.649999999999999,
+    "y": 70,
+    "w": 53.7,
+    "h": 13.5
+   },
+   "fanY": 67.3,
+   "fanColor": "#0c5e84",
+   "numCenter": {
+    "x": 57.45,
+    "y": 66.95
+   },
+   "actionTop": 17.1
+  }
+ }
+}

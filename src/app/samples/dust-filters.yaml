@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
+name: Dust Filters
+cost: 8
+tags: [building]
+active:
+  - "{red city : 2mc}"
+  - "(Effect: When ANY city tile is placed, gain 2 MC.)"
+vp: 1
+number: "004"
