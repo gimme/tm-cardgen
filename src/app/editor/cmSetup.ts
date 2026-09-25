@@ -9,6 +9,7 @@ import { basicSetup } from 'codemirror'
 import { getServices } from '../store/services.ts'
 import { cardCompletions } from './completions.ts'
 import { continueList, openRows } from './continueList.ts'
+import { keyHelp } from './keyHelp.ts'
 import { cardLinter } from './lintSource.ts'
 
 export function makeEditorState(text: string, onChange: (text: string) => void): EditorState {
@@ -35,6 +36,7 @@ export function makeEditorState(text: string, onChange: (text: string) => void):
       oneDark,
       cardLinter,
       lintGutter(),
+      keyHelp,
       autocompletion({
         override: [(context) => cardCompletions(context, getServices().art.files())],
         // cardCompletions is synchronous, so the popup delays buy nothing

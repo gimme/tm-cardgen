@@ -18,8 +18,8 @@ export interface ValidateResult {
   spec?: CardSpec
 }
 
-/** Every accepted top-level key, with the one-line help shown by the editor's
- *  completions. */
+/** Every accepted top-level key, with the one-line help the editor shows in
+ *  completions and on hover. */
 export const TOP_LEVEL_FIELDS = {
   name: { doc: 'Card name (title band)' },
   cost: { doc: 'MC cost (integer or "X")' },
