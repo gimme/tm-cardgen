@@ -197,6 +197,15 @@ function validateArt(ctx: Ctx, node: Node | null): ArtSpec | undefined {
     const art: ArtSpec = { file: fileNode.value, zoom: 1, offset: [0, 0] }
     for (const pair of node.items) {
       const key = keyOf(pair)
+      if (key === undefined) continue
+      if (!Object.hasOwn(ART_FIELDS, key)) {
+        const hint = suggest(key, Object.keys(ART_FIELDS))
+        ctx.warn(
+          (pair.key as Node) ?? node,
+          `unknown art property '${key}'${hint ? ` — did you mean '${hint}'?` : ''}`,
+        )
+        continue
+      }
       const value = pair.value as Node | null
       if (key === 'zoom') {
         if (isScalar(value) && typeof value.value === 'number' && value.value >= 1) {
@@ -206,8 +215,6 @@ function validateArt(ctx: Ctx, node: Node | null): ArtSpec | undefined {
         const p = asPoint(value)
         if (p) art.offset = p
         else ctx.error(value ?? node, 'offset must be [x, y] in mm')
-      } else if (key !== 'file') {
-        ctx.warn((pair.key as Node) ?? node, `unknown art property '${key}'`)
       }
     }
     return art

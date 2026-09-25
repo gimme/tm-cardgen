@@ -52,6 +52,15 @@ describe('validateCard', () => {
     expect(source.slice(diagnostics[0].from, diagnostics[0].to)).toBe('flavour')
   })
 
+  it('flags unknown art properties as warnings with suggestions', () => {
+    const source = MINIMAL + 'art: {file: x.png, zom: 2}\n'
+    const { diagnostics, spec } = check(source)
+    expect(spec?.art).toMatchObject({ file: 'x.png', zoom: 1 })
+    expect(diagnostics[0]).toMatchObject({ severity: 'warning' })
+    expect(diagnostics[0].message).toContain("did you mean 'zoom'?")
+    expect(source.slice(diagnostics[0].from, diagnostics[0].to)).toBe('zom')
+  })
+
   it('warns on a flavor that ends in a period, squiggling the period', () => {
     const source = MINIMAL + 'flavor: Life finds a way.\n'
     const { diagnostics, spec } = check(source)
