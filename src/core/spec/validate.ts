@@ -23,20 +23,20 @@ export interface ValidateResult {
 export const TOP_LEVEL_FIELDS = {
   name: { doc: 'Card name (title band)' },
   cost: { doc: 'MC cost (integer or "X")' },
-  tags: { doc: 'Tag list, order = left to right; an event tag makes the card red' },
+  tags: { doc: 'Tag list in order, left to right; an event tag makes the card red' },
   requirement: { doc: 'Requirement, e.g. "max 6% {oxygen}" or "{science-tag science-tag}"' },
   active: {
-    doc: 'Rows of the action area at the top (a list, or one string); makes the card blue',
+    doc: 'Rows of the action area at the top (a list of row strings, or one string); makes the card blue',
   },
   body: { doc: 'Rows of the box under the art (a list of row strings, or one string)' },
   vp: {
-    doc: 'Victory points: an integer, or a row set in the disc, the bare number in its style: "1 {/ 2 microbe}"',
+    doc: 'Victory points: an integer, or a row set in the disc, like "1 {/ 2 microbe}"',
   },
   flavor: { doc: 'Flavor text (italic, bottom of the body box)' },
   number: { doc: 'Card number (bottom-right box); an integer is padded to 3 digits' },
-  art: { doc: 'Art file name, or {file, zoom, offset: [mm, mm]}; left out, a drawn Mars sky' },
+  art: { doc: 'Art file name, or {file, zoom, offset}' },
   artist: { doc: 'Artist credit, printed up the right edge of the art' },
-  seed: { doc: "Reroll the frame's crystal texture (any integer; default derives from the name)" },
+  seed: { doc: "Reroll the frame's crystal texture (any integer)" },
 } satisfies Record<string, { doc: string }>
 
 /** The keys of art's map form, with the same one-line help. */
