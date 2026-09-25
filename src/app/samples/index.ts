@@ -28,8 +28,7 @@ export const SAMPLE_CARDS: SampleCard[] = [
 export const SAMPLE_ART_FILES = ['double-the-rubble.png']
 
 /** template for the New Card button */
-export const NEW_CARD_TEMPLATE = `# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
-name: New Card
+export const NEW_CARD_TEMPLATE = `name: New Card
 cost: 10
 tags: [building]
 body:

@@ -1,4 +1,3 @@
-# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
 name: Terraced Reservoirs
 cost: 19
 tags: [building]

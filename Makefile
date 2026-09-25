@@ -6,7 +6,7 @@ SHELL := bash
 MAKEFLAGS += --no-print-directory
 
 .PHONY: help install dev test typecheck lint format format-check check \
-        build build-pages verify-pages schema
+        build build-pages verify-pages
 
 # e.g. `make dev ARGS=--host`, `make test ARGS=src/core`
 ARGS ?=
@@ -59,6 +59,3 @@ build-pages: $(DEPS) ## Production build with the GitHub Pages base path
 
 verify-pages: build-pages ## Build for Pages, then check every asset link resolves
 	BASE_PATH=$(PAGES_BASE) npm run check:links
-
-schema: $(DEPS) ## Regenerate schema/card.schema.json + public/card.schema.json
-	npm run schema

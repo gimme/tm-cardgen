@@ -1,4 +1,3 @@
-# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
 name: Ridgeline Greenhouses
 cost: 11
 tags: [building, plant]

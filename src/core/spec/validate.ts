@@ -19,7 +19,7 @@ export interface ValidateResult {
 }
 
 /** Every accepted top-level key, with the one-line help shown by the editor's
- *  completions and used as the description in the generated JSON schema. */
+ *  completions. */
 export const TOP_LEVEL_FIELDS = {
   name: { doc: 'Card name (title band)' },
   cost: { doc: 'MC cost (integer or "X")' },
@@ -39,16 +39,12 @@ export const TOP_LEVEL_FIELDS = {
   seed: { doc: "Reroll the frame's crystal texture (any integer; default derives from the name)" },
 } satisfies Record<string, { doc: string }>
 
-export type TopLevelField = keyof typeof TOP_LEVEL_FIELDS
-
 /** The keys of art's map form, with the same one-line help. */
 export const ART_FIELDS = {
   file: { doc: 'Art file name, as listed in the Art panel' },
   zoom: { doc: 'Scale beyond cover-fit; 1 = exact cover' },
   offset: { doc: 'Pan [x, y] in mm, clamped so no gaps appear' },
 } satisfies Record<string, { doc: string }>
-
-export type ArtField = keyof typeof ART_FIELDS
 
 class Ctx {
   diagnostics: Diagnostic[] = []

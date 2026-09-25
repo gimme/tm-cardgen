@@ -12,8 +12,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"tests/**/*.ts\" \"scripts/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"tests/**/*.ts\" \"scripts/**/*.ts\"",
     "test": "vitest run",
-    "check:links": "tsx scripts/check-dist-links.ts",
-    "schema": "tsx scripts/generate-schema.ts"
+    "check:links": "tsx scripts/check-dist-links.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

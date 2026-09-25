@@ -1,4 +1,3 @@
-# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
 # Text and icons sharing braces
 name: Hired Raiders
 cost: 1

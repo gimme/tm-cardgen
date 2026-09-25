@@ -1,4 +1,3 @@
-# yaml-language-server: $schema=https://gimme.github.io/tm-cardgen/card.schema.json
 name: Meteor Swarm
 cost: 14
 tags: [space, event]

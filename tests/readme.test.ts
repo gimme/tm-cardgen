@@ -1,4 +1,4 @@
-// The README's sample card is one of the shipped samples, minus the modeline.
+// The README's sample card is one of the shipped samples, verbatim.
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,7 +14,5 @@ it('README sample card matches the shipped jovian-research-ring.yaml', () => {
     path.join(ROOT, 'src/app/samples/jovian-research-ring.yaml'),
     'utf8',
   )
-  const [modeline, ...rest] = sample.split('\n')
-  expect(modeline).toMatch(/^# yaml-language-server:/)
-  expect(rest.join('\n')).toBe(block)
+  expect(sample).toBe(block)
 })
