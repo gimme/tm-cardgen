@@ -6,21 +6,27 @@ import { explainAt, ROW_FIELDS, type Explanation } from '../../core/index.ts'
 import { iconSvg } from './iconMarkup.ts'
 
 /** The explanation for the pointer at `pos`, when it is on a row string:
- *  a body or active row, the requirement or the VP disc. `from` and `to`
- *  are document offsets. `side` says which neighbour the pointer is on
- *  when `pos` is a boundary, as hoverTooltip reports it. */
+ *  a body or active row, the requirement or the VP disc, written plain,
+ *  quoted or as a block. `from` and `to` are document offsets. `side`
+ *  says which neighbour the pointer is on when `pos` is a boundary, as
+ *  hoverTooltip reports it. */
 export function rowHelpAt(state: EditorState, pos: number, side: -1 | 1): Explanation | undefined {
   // the character under the pointer
   const at = side < 0 ? pos - 1 : pos
   if (at < 0) return undefined
   const node = syntaxTree(state).resolveInner(at, 1)
-  if (node.name !== 'Literal' && node.name !== 'QuotedLiteral') return undefined
-  const field = rowFieldOf(state, node)
+  // a block scalar's lines are a node of their own under its header
+  const block = node.name === 'BlockLiteralContent'
+  const scalar = block ? node.parent : node
+  if (!scalar || !(block || scalar.name === 'Literal' || scalar.name === 'QuotedLiteral'))
+    return undefined
+  const field = rowFieldOf(state, scalar)
   if (field === undefined) return undefined
-  // the row as written: a quoted scalar's text between its quotes
-  const quoted = node.name === 'QuotedLiteral'
-  const from = node.from + (quoted ? 1 : 0)
-  const to = node.to - (quoted ? 1 : 0)
+  // the row as written: a quoted scalar's text between its quotes, a
+  // block's lines with their indentation, which is whitespace to the explainer
+  const quoted = scalar.name === 'QuotedLiteral'
+  const from = block ? node.from : scalar.from + (quoted ? 1 : 0)
+  const to = block ? node.to : scalar.to - (quoted ? 1 : 0)
   if (at < from || at >= to) return undefined
   const help = explainAt(state.sliceDoc(from, to), at - from, ROW_FIELDS[field])
   return help && { ...help, from: help.from + from, to: help.to + from }
