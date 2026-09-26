@@ -40,9 +40,6 @@ export function EditorPane() {
         >
           Syntax
         </button>
-        <span className={saveState === 'error' ? 'status-error' : ''}>
-          {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving…' : 'Save failed'}
-        </span>
         <span className="status-spacer" />
         {stale && <span className="status-stale">preview stale</span>}
         <span className={errors > 0 ? 'status-error' : ''}>
@@ -51,7 +48,34 @@ export function EditorPane() {
         <span className={warnings > 0 ? 'status-warn' : ''}>
           {warnings} warning{warnings === 1 ? '' : 's'}
         </span>
+        <SaveState state={saveState} />
       </footer>
     </section>
+  )
+}
+
+/** Like Google Docs: at rest a small check, the state spelt out only while
+ *  it is worth reading. */
+function SaveState({ state }: { state: 'saved' | 'saving' | 'error' }) {
+  if (state === 'saving') return <span className="status-save">Saving…</span>
+  if (state === 'error') return <span className="status-save status-error">Save failed</span>
+  return (
+    <span
+      className="status-save status-saved"
+      role="img"
+      aria-label="Saved"
+      title="Saved — in this browser only. Export a zip to keep a copy."
+    >
+      <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+        <path
+          d="M2.5 6.5 L5 9 L9.5 3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
   )
 }

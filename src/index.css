@@ -207,6 +207,18 @@ button {
   flex: 1;
 }
 
+/* holds the width of "Saving…" so the counts beside it stay put while typing */
+.status-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 4em;
+}
+
+.status-saved svg {
+  display: block;
+}
+
 /* ---- syntax cheat sheet ---- */
 .syntax-sheet {
   flex-shrink: 0;
