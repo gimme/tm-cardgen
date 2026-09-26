@@ -17,7 +17,7 @@ export const ROW_SYNTAX = {
   icon: { form: '{plant}', doc: 'An icon by its name' },
   group: { form: '{plant plant}', doc: 'Icons that belong together share braces and sit closer' },
   big: {
-    form: '{3 plant} {OR} {STEAL 2}',
+    form: '{4 plant} {OR} {STEAL 2}',
     doc: 'Numbers and keywords print large; keywords are written in CAPS',
   },
   coin: { form: '{25mc} {Xmc} {-2mc}', doc: 'An amount of megacredits, printed on the coin' },
