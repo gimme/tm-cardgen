@@ -8,10 +8,11 @@ export interface ParseResult {
 
 /** Parse the card YAML. The Document keeps node ranges for validation. */
 export function parseCardYaml(source: string): ParseResult {
-  const doc = parseDocument(source, { keepSourceTokens: true })
+  // the editor underlines the range, so the library's line/column suffix and snippet only add noise
+  const doc = parseDocument(source, { keepSourceTokens: true, prettyErrors: false })
   const syntaxErrors: Diagnostic[] = doc.errors.map((e) => ({
     severity: 'error',
-    message: e.message.split('\n')[0],
+    message: e.message,
     from: e.pos[0],
     to: Math.max(e.pos[1], e.pos[0] + 1),
   }))
