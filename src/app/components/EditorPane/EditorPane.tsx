@@ -85,17 +85,18 @@ export function EditorPane() {
   )
 }
 
-/** Like Google Docs: at rest a small check, the state spelt out only while
- *  it is worth reading. */
+/** A small check that dims while a save is pending and settles once it has
+ *  landed: the same glyph in the same slot, so the counts beside it never
+ *  move while typing. Only a failure is spelt out. */
 function SaveState({ state }: { state: 'saved' | 'saving' | 'error' }) {
-  if (state === 'saving') return <span className="status-save">Saving…</span>
   if (state === 'error') return <span className="status-save status-error">Save failed</span>
+  const saving = state === 'saving'
   return (
     <span
-      className="status-save status-saved"
+      className={saving ? 'status-save status-saving' : 'status-save'}
       role="img"
-      aria-label="Saved"
-      title="Saved — in this browser only. Export a zip to keep a copy."
+      aria-label={saving ? 'Saving' : 'Saved'}
+      title={saving ? 'Saving…' : 'Saved — in this browser only. Export a zip to keep a copy.'}
     >
       <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
         <path

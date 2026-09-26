@@ -236,16 +236,19 @@ button {
   flex: 1;
 }
 
-/* holds the width of "Saving…" so the counts beside it stay put while typing */
+/* the check dims while a save is pending; the slot never changes size */
 .status-save {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  min-width: 4em;
 }
 
-.status-saved svg {
+.status-save svg {
   display: block;
+  transition: opacity 150ms ease-out;
+}
+
+.status-saving svg {
+  opacity: 0.3;
 }
 
 /* ---- syntax cheat sheet ---- */
