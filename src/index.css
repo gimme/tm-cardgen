@@ -355,8 +355,7 @@ button {
   color: var(--error);
 }
 
-.status-warn,
-.status-stale {
+.status-warn {
   color: var(--warn);
 }
 

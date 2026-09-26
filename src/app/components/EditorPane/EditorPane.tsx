@@ -28,7 +28,6 @@ export function EditorPane() {
   const textEpoch = useStore((s) => s.textEpoch)
   const diagnostics = useStore((s) => s.diagnostics)
   const saveState = useStore((s) => s.saveState)
-  const stale = useStore((s) => s.stale)
   const hostRef = useRef<HTMLDivElement>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [hint, setHint] = useState(() => !sheetSeen())
@@ -72,13 +71,16 @@ export function EditorPane() {
           Syntax &amp; icons
         </button>
         <span className="status-spacer" />
-        {stale && <span className="status-stale">preview stale</span>}
-        <span className={errors > 0 ? 'status-error' : ''}>
-          {errors} error{errors === 1 ? '' : 's'}
-        </span>
-        <span className={warnings > 0 ? 'status-warn' : ''}>
-          {warnings} warning{warnings === 1 ? '' : 's'}
-        </span>
+        {errors > 0 && (
+          <span className="status-error">
+            {errors} error{errors === 1 ? '' : 's'}
+          </span>
+        )}
+        {warnings > 0 && (
+          <span className="status-warn">
+            {warnings} warning{warnings === 1 ? '' : 's'}
+          </span>
+        )}
         <SaveState state={saveState} />
       </footer>
     </section>
