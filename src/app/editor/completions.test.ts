@@ -34,7 +34,7 @@ describe('cardCompletions', () => {
     const options = (doc: string) => completeAtEnd(doc)?.options ?? []
     const opened = options('body:\n  - "{')
     const labels = opened.map((o) => o.label)
-    for (const word of ['plant', 'red', '+', '-', '=', ':', '/', '->', '*'])
+    for (const word of ['plant', 'red', '+', '-', '=', ':', '/', '*'])
       expect(labels).toContain(word)
     expect(options('body:\n  - "{plant ')).toEqual(opened)
     expect(applied('body:\n  - "{re', 'red')).toBe('body:\n  - "{red')
@@ -44,7 +44,17 @@ describe('cardCompletions', () => {
     const boost = (label: string) => opened.find((o) => o.label === label)?.boost
     expect(boost('plant')).toBeUndefined()
     expect(boost('red')).toBe(-1)
-    for (const symbol of ['*', '+', '-', '/', ':', '=', '->']) expect(boost(symbol)).toBe(-2)
+    for (const symbol of ['*', '+', '-', '/', ':', '=']) expect(boost(symbol)).toBe(-2)
+  })
+
+  it('offers the action arrow in the active rows only', () => {
+    const labels = (doc: string) => completeAtEnd(doc)?.options.map((o) => o.label) ?? []
+    expect(labels('active:\n  - "{')).toContain('->')
+    expect(labels('active: ["{')).toContain('->')
+    expect(labels('body:\n  - "{')).not.toContain('->')
+    expect(labels('requirement: "{')).not.toContain('->')
+    const arrow = completeAtEnd('active:\n  - "{')?.options.find((o) => o.label === '->')
+    expect(arrow).toMatchObject({ type: 'word', icon: { name: '->' }, boost: -2 })
   })
 
   it('carries the icon an icon name draws in the list; the marks and words none', () => {
@@ -55,7 +65,6 @@ describe('cardCompletions', () => {
       type: 'word',
       icon: { name: 'plant' },
     })
-    expect(option('body:\n  - "{', '->')).toMatchObject({ icon: { name: '->' }, boost: -2 })
     expect(option('body:\n  - "{', '*')).toEqual({ label: '*', type: 'word', boost: -2 })
     expect(option('body:\n  - "{', 'red')).toEqual({ label: 'red', type: 'word', boost: -1 })
     expect(option('body:\n  - "{', ':')).toEqual({ label: ':', type: 'word', boost: -2 })

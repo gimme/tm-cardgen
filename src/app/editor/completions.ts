@@ -29,9 +29,10 @@ const iconWord = (name: string, inscription?: string): IconCompletion => ({
 const MODIFIER = { boost: -1 }
 const SYMBOL = { boost: -2 }
 
-/** everything a word in braces can be: the icons, then `red` and the operators */
+/** everything a word in braces can be: the icons, then `red` and the
+ *  operators; the action arrow only in the active rows */
 const BRACE_WORDS: Completion[] = [
-  ...ICON_NAMES.map((name): Completion => {
+  ...ICON_NAMES.filter((name) => name !== '->').map((name): Completion => {
     // a footnote mark is a glyph like the operators, not an icon to draw
     const word = ICONS[name].note ? { label: name, type: 'word' } : iconWord(name)
     return /^[a-z]/.test(name) ? word : { ...word, ...SYMBOL }
@@ -39,6 +40,7 @@ const BRACE_WORDS: Completion[] = [
   { label: 'red', type: 'word', ...MODIFIER },
   ...OPERATORS.map((op): Completion => ({ label: op, type: 'word', ...SYMBOL })),
 ]
+const ACTIVE_WORDS: Completion[] = [...BRACE_WORDS, { ...iconWord('->'), ...SYMBOL }]
 
 export function cardCompletions(
   context: CompletionContext,
@@ -98,7 +100,8 @@ export function cardCompletions(
         validFor: /^[a-zA-Z0-9-]*$/,
       }
     }
-    return { from: context.pos - icon[1].length, options: BRACE_WORDS, validFor: /^[a-zA-Z0-9-]*$/ }
+    const words = top?.key === 'active' ? ACTIVE_WORDS : BRACE_WORDS
+    return { from: context.pos - icon[1].length, options: words, validFor: /^[a-zA-Z0-9-]*$/ }
   }
 
   // tag names inside tags: [ … ] or after `- ` under tags:

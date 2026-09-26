@@ -142,11 +142,27 @@ function reportTokens(
   return errors.length > 0
 }
 
+/** The action arrow, {->}, is at home in the active box. Anywhere else it
+ *  still prints, with a warning at its own offsets in the scalar. */
+function warnArrows(ctx: Ctx, map: ReturnType<typeof scalarMapper>, items: RichTextItem[]) {
+  for (const item of items) {
+    if (item.kind === 'stack') warnArrows(ctx, map, item.items)
+    else if (item.kind === 'icon' && item.name === '->') {
+      const [from, to] = map(item.start, item.end)
+      ctx.addAt('warning', from, to, "'->' is the action arrow — it belongs in the 'active' box")
+    }
+  }
+}
+
 /** A flow: a list of row strings, or one string. A bare key with nothing
  *  under it is an empty flow. */
-function validateRows(ctx: Ctx, node: Node | null, what: string): Row[] | undefined {
+function validateRows(ctx: Ctx, node: Node | null, what: 'active' | 'body'): Row[] | undefined {
   if (node === null || (isScalar(node) && node.value === null)) return []
-  const rowOf = (n: Scalar) => validateItems(ctx, n, { stacks: true, rules: true, lines: true })
+  const rowOf = (n: Scalar) => {
+    const items = validateItems(ctx, n, { stacks: true, rules: true, lines: true })
+    if (items && what === 'body') warnArrows(ctx, scalarMapper(ctx, n), items)
+    return items
+  }
   if (isScalar(node) && typeof node.value === 'string') {
     const items = rowOf(node)
     return items && [items]
@@ -288,7 +304,11 @@ export function validateCard(doc: Document, source: string): ValidateResult {
         const s = asStringScalar(ctx, value, 'requirement')
         if (!s) break
         const { req, errors, warnings } = parseRequirement(String(s.value))
-        if (!reportTokens(ctx, scalarMapper(ctx, s), errors, warnings)) spec.requirement = req
+        const map = scalarMapper(ctx, s)
+        if (!reportTokens(ctx, map, errors, warnings)) {
+          spec.requirement = req
+          warnArrows(ctx, map, req.items)
+        }
         break
       }
       case 'active': {
@@ -305,7 +325,11 @@ export function validateCard(doc: Document, source: string): ValidateResult {
           break
         }
         const { vp, errors, warnings } = parseVp(value.value)
-        if (!reportTokens(ctx, scalarMapper(ctx, value), errors, warnings)) spec.vp = vp
+        const map = scalarMapper(ctx, value)
+        if (!reportTokens(ctx, map, errors, warnings)) {
+          spec.vp = vp
+          if (vp) warnArrows(ctx, map, vp)
+        }
         break
       }
       case 'flavor': {
@@ -358,7 +382,7 @@ export function validateCard(doc: Document, source: string): ValidateResult {
   const isEvent = spec.tags!.includes('event')
   if (spec.active !== undefined) {
     spec.type = 'active'
-    if (isEvent) ctx.warn(tagsNode, 'an event tag on a card with active: rows — the card is blue')
+    if (isEvent) ctx.warn(tagsNode, "an event tag on a card with 'active' rows — the card is blue")
   } else {
     spec.type = isEvent ? 'event' : 'automated'
   }

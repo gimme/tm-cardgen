@@ -27,6 +27,21 @@ describe('validateCard', () => {
     expect(both.diagnostics[0].message).toContain('the card is blue')
   })
 
+  it('keeps the action arrow to the active box, but still prints it', () => {
+    expect(check(MINIMAL + 'active:\n  - "{titanium} {->} {4 heat}"\n').diagnostics).toEqual([])
+    const body = check(MINIMAL + 'body:\n  - "{titanium} {->} {4 heat}"\n')
+    expect(body.spec?.body[0].map((i) => i.kind)).toEqual(['icon', 'icon', 'text', 'icon'])
+    expect(body.diagnostics).toHaveLength(1)
+    expect(body.diagnostics[0]).toMatchObject({ severity: 'warning', from: 39, to: 41 })
+    expect(body.diagnostics[0].message).toContain("belongs in the 'active' box")
+    // inside a box too, and in the other row fields
+    expect(check(MINIMAL + 'body:\n  - "[{plant} | {->}]"\n').diagnostics).toHaveLength(1)
+    expect(check(MINIMAL + 'requirement: "{->}"\n').diagnostics[0].message).toContain(
+      "'active' box",
+    )
+    expect(check(MINIMAL + 'vp: "1 {->}"\n').diagnostics[0].message).toContain("'active' box")
+  })
+
   it('squiggles exactly the bad token with a suggestion', () => {
     const source = MINIMAL + 'body:\n  - "{platn}"\n'
     const { diagnostics, spec } = check(source)
