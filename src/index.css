@@ -242,13 +242,26 @@ button {
 .syntax-forms {
   display: grid;
   grid-template-columns: fit-content(190px) 1fr;
-  column-gap: 14px;
-  row-gap: 4px;
   margin: 0;
 }
 
+/* a hairline between rows, so a wrapped explanation stays with its form;
+   the column gap is the form's padding so the line runs unbroken */
+.syntax-forms dt,
 .syntax-forms dd {
   margin: 0;
+  padding: 5px 0;
+  border-top: 1px solid rgb(255 255 255 / 0.07);
+}
+
+.syntax-forms dt {
+  padding-right: 14px;
+}
+
+.syntax-forms dt:first-of-type,
+.syntax-forms dd:first-of-type {
+  padding-top: 0;
+  border-top: none;
 }
 
 .syntax-forms code {
