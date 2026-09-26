@@ -75,12 +75,31 @@ function iconNode(def: IconDef, x: number, y: number, w: number, h: number): Lay
     : { kind: 'image', asset: { type: 'asset', path: def.file }, x, y, w, h }
 }
 
-/** A registered icon by itself at its body height, for showing it off. */
+/** the number or X drawn on an inscribed icon, centered in its box; the
+ *  em and baseline are fractions of the icon's height */
+function inscriptionNode(text: string, boxW: number, boxH: number, h: number): TextNode {
+  const size = h * 0.565
+  return {
+    kind: 'text',
+    font: 'proto',
+    size,
+    x: boxW / 2,
+    y: boxH / 2 + size * 0.36,
+    text,
+    fill: '#000',
+    anchor: 'middle',
+  }
+}
+
+/** A registered icon by itself at its body height, for showing it off. An
+ *  inscribed one wears an X where its number goes. */
 export function iconSample(name: string): Chunk {
   const def = ICONS[name]
   const h = def.h
   const w = h * def.aspect
-  return { w, h, nodes: [iconNode(def, 0, 0, w, h)] }
+  const nodes = [iconNode(def, 0, 0, w, h)]
+  if (def.inscribed) nodes.push(inscriptionNode('X', w, h, h))
+  return { w, h, nodes }
 }
 
 // ---- chunk machinery -----------------------------------------------------
@@ -279,20 +298,7 @@ export class Engine {
       nodes.push({ kind: 'halo', shape: def.halo, x: ix, y: iy, w, h, scale })
     }
     nodes.push(iconNode(def, ix, iy, w, h))
-    if (item.inscription !== undefined) {
-      // the inscription's em and baseline as fractions of the coin's height
-      const size = h * 0.565
-      nodes.push({
-        kind: 'text',
-        font: 'proto',
-        size,
-        x: boxW / 2,
-        y: boxH / 2 + size * 0.36,
-        text: item.inscription,
-        fill: '#000',
-        anchor: 'middle',
-      })
-    }
+    if (item.inscription !== undefined) nodes.push(inscriptionNode(item.inscription, boxW, boxH, h))
     // a note hangs off the box's top-right corner (a ring's counted share
     // included), moved by the icon's own fix-up (icons.ts)
     const [dx, dy] = def.noteAt ?? [0, 0]

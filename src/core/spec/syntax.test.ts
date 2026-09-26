@@ -34,4 +34,10 @@ describe('ICON_GROUPS', () => {
       expect(markup).toMatch(/<(image|path|g)/)
     }
   })
+
+  it('shows the coin with an X where its number goes', () => {
+    const texts = iconSample('mc').nodes.filter((n) => n.kind === 'text')
+    expect(texts.map((n) => n.text)).toEqual(['X'])
+    expect(iconSample('plant').nodes.some((n) => n.kind === 'text')).toBe(false)
+  })
 })
