@@ -87,6 +87,10 @@ interface Flow {
 
 const BODY_FLOW: Flow = { cx: COMMON.cx, w: COMMON.flow.w }
 
+/** the widest a row may be: the body box, which the flavor fills. Text
+ *  wraps at the flow's width, short of that; icons may run out to it. */
+const ROW_LIMIT = COMMON.flavor.w
+
 /** the width left of the VP disc, and the y a row must clear when it does
  *  not fit there */
 const VP = (() => {
@@ -160,10 +164,10 @@ function centerFlow(
   return placed.nodes
 }
 
-/** Warn on any row wider than the flow. */
+/** Warn on any row wider than the body box. */
 function checkRowWidths(engine: Engine, rows: Row[], flow: Flow, what: string) {
   flowLines(rows).forEach((line, i) => {
-    const over = engine.lineChunk(line, bodyStyle(1), flow.w).w - flow.w
+    const over = engine.lineChunk(line, bodyStyle(1), flow.w).w - ROW_LIMIT
     if (over > 0.05) engine.warn(`${what} row ${i + 1} is ${over.toFixed(1)}mm too wide — split it`)
   })
 }

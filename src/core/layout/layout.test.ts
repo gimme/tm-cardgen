@@ -419,9 +419,22 @@ describe('rows', () => {
     expect(mc.y + mc.h).toBeLessThanOrEqual(inBox[0].y + 1e-6)
   })
 
-  it('warns about a row too wide for the flow', () => {
-    const layout = layoutCard(card({ body: [row('{ocean ocean ocean} {ocean ocean ocean}')] }), ctx)
-    expect(layout.warnings.some((w) => /body row 1 is .*too wide/.test(w.message))).toBe(true)
+  it('warns about a row too wide for the body box, not one past the flow', () => {
+    const wide = (body: string) =>
+      layoutCard(card({ body: [row(body)] }), ctx).warnings.some((w) =>
+        /body row 1 is .*too wide/.test(w.message),
+      )
+    // six hexes: 48.3mm of tile, and 6mm of gaps with a loose one, 4mm without
+    expect(wide('{ocean ocean ocean} {ocean ocean ocean}')).toBe(true)
+    expect(wide('{ocean ocean ocean ocean ocean ocean}')).toBe(false)
+    // the one that fits still centers on the card, past the flow's edges
+    const layout = layoutCard(card({ body: [row('{ocean ocean ocean ocean ocean ocean}')] }), ctx)
+    const oceans = icons(layout, 'ocean')
+    const left = Math.min(...oceans.map((o) => o.x))
+    const right = Math.max(...oceans.map((o) => o.x + o.w))
+    expect(right - left).toBeGreaterThan(COMMON.flow.w)
+    expect(right - left).toBeLessThan(COMMON.flavor.w)
+    expect((left + right) / 2).toBeCloseTo(COMMON.cx, 5)
   })
 })
 

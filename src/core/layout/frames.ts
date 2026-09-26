@@ -85,7 +85,10 @@ export const COMMON = {
   },
   /** axis for flavor lines beside the VP disc */
   vpShiftX: 23.3,
-  /** the flow: rows center on cx in this width; rules text size/leading */
+  /** the flow: rows center on cx and wrap their text in this width, so
+   *  text breaks short of the panel's edges; a row of fixed elements may
+   *  run out to the body box (flavor.w) before it is too wide. Then rules
+   *  text size/leading */
   flow: { w: 50.3 },
   rules: { size: 2.3, lineSpace: 0.5 },
   /** flavor: bottom baseline and wrap widths (plain / beside VP) */
