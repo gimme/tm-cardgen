@@ -1,7 +1,7 @@
-// The row language as the editor's cheat sheet tells it: the forms body and
-// active rows, the requirement and the VP disc are written in, then every
-// icon by name. Each form is a row that parses clean (syntax.test.ts). The
-// tokenizer is richtext.ts.
+// The rich text syntax as the editor's cheat sheet tells it: the forms body
+// and active rows, the requirement and the VP disc are written in, then
+// every icon by name. Each form parses clean (syntax.test.ts). The tokenizer
+// is richtext.ts.
 import { KNOWN_TAGS } from '../icons.ts'
 
 export interface SyntaxEntry {
@@ -13,7 +13,7 @@ export interface SyntaxEntry {
 
 /** The forms in the cheat sheet's order, keyed so the editor can quote
  *  one of them. */
-export const ROW_SYNTAX = {
+export const RICH_TEXT_SYNTAX = {
   icon: { form: '{plant}', doc: 'An icon by its name' },
   group: { form: '{plant plant}', doc: 'Icons that belong together share braces and sit closer' },
   big: {

@@ -85,8 +85,8 @@ export const COMMON = {
   },
   /** axis for flavor lines beside the VP disc */
   vpShiftX: 23.3,
-  /** the flow: rows center on cx and wrap their text in this width, so
-   *  text breaks short of the panel's edges; a row of fixed elements may
+  /** the flow: lines center on cx and wrap their text in this width, so
+   *  text breaks short of the panel's edges; a line of fixed elements may
    *  run out to the body box (flavor.w) before it is too wide. Then rules
    *  text size/leading */
   flow: { w: 50.3 },
@@ -111,7 +111,7 @@ const DY = {
   blue: { bodyTop: 4.5, fan: 1.8, fanColor: '#0c5e84' },
 } as const
 
-/** blue's action area: rows from `top`, the divider `pad` under the last row */
+/** blue's action area: lines from `top`, the divider `pad` under the last line */
 export const ACTION = { top: 17.1, pad: 1.9, minArtTop: FAMILY.blue.artTop } as const
 
 /** minimum art window height; the body and blue's action area stop there */

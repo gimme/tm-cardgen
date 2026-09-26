@@ -36,9 +36,9 @@ describe('parseVp', () => {
 
   it('rejects malformed values', () => {
     const message = (value: unknown) => parseVp(value).errors[0]?.message
-    expect(message(1.5)).toContain('integer or a row')
-    expect(message(null)).toContain('integer or a row')
-    expect(message('')).toContain('integer or a row')
+    expect(message(1.5)).toContain('integer or card text')
+    expect(message(null)).toContain('integer or card text')
+    expect(message('')).toContain('integer or card text')
     expect(message('{1 / a}')).toContain("unknown icon 'a'")
     expect(message('{1} | {2}')).toContain('one line')
     expect(parseVp('{1 / a}').vp).toBeUndefined()

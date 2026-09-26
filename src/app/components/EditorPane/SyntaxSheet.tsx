@@ -1,7 +1,7 @@
-// The row-language cheat sheet under the editor: each form and what it
+// The rich text cheat sheet under the editor: each form and what it
 // prints, then every icon by name, drawn by the card renderer.
 import { Fragment, useId, useMemo } from 'react'
-import { ICON_GROUPS, ROW_SYNTAX } from '../../../core/index.ts'
+import { ICON_GROUPS, RICH_TEXT_SYNTAX } from '../../../core/index.ts'
 import { iconMarkup } from '../../editor/iconMarkup.ts'
 
 export function SyntaxSheet() {
@@ -10,7 +10,7 @@ export function SyntaxSheet() {
       <section className="sheet-part">
         <h2>Syntax</h2>
         <dl className="syntax-forms">
-          {Object.values(ROW_SYNTAX).map(({ form, doc }) => (
+          {Object.values(RICH_TEXT_SYNTAX).map(({ form, doc }) => (
             <Fragment key={form}>
               <dt>
                 <code>{form}</code>

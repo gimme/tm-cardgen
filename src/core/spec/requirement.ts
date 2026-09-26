@@ -4,7 +4,7 @@ import type { Requirement } from './types.ts'
 /** the requirement is one line, boxes allowed, no rules text */
 export const REQUIREMENT_SYNTAX: RichTextOptions = { stacks: true, rules: false, lines: false }
 
-/** Parse a `requirement:` string: optional leading `max`, then row items. */
+/** Parse a `requirement:` string: optional leading `max`, then rich text. */
 export function parseRequirement(src: string): {
   req: Requirement
   errors: RichTextError[]

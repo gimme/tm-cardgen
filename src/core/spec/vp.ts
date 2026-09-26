@@ -11,10 +11,10 @@ export interface VpParseResult {
   warnings: RichTextError[]
 }
 
-export const VP_USAGE = 'vp is an integer or a row set in the disc, like "1 {/ 2 microbe}"'
+export const VP_USAGE = 'vp is an integer or card text set in the disc, like "1 {/ 2 microbe}"'
 
-/** Parse the `vp:` field: an integer, or a row string. Bare text is the
- *  disc's numeral; a row with none gets a hint. */
+/** Parse the `vp:` field: an integer, or rich text. Bare text is the
+ *  disc's numeral; text with none gets a hint. */
 export function parseVp(value: unknown): VpParseResult {
   const src =
     typeof value === 'number' && Number.isInteger(value)

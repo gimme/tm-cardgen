@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { explainAt, ROW_FIELDS, type Explanation } from './explain.ts'
-import { ROW_SYNTAX } from './syntax.ts'
+import { explainAt, RICH_TEXT_FIELDS, type Explanation } from './explain.ts'
+import { RICH_TEXT_SYNTAX } from './syntax.ts'
 
-/** The explanation for the character after the ‸ in `row`. */
-function at(row: string, opts = ROW_FIELDS.body): Explanation | undefined {
-  return explainAt(row.replace('‸', ''), row.indexOf('‸'), opts)
+/** The explanation for the character after the ‸ in `src`. */
+function at(src: string, opts = RICH_TEXT_FIELDS.body): Explanation | undefined {
+  return explainAt(src.replace('‸', ''), src.indexOf('‸'), opts)
 }
 
 describe('explainAt', () => {
@@ -35,10 +35,10 @@ describe('explainAt', () => {
   })
 
   it('names the brackets and the breaks', () => {
-    expect(at('‸[{plant}]')).toEqual({ from: 0, to: 1, doc: ROW_SYNTAX.box.doc })
-    expect(at('[{plant}‸]')?.doc).toBe(ROW_SYNTAX.box.doc)
-    expect(at('‸<{plant} | {heat}>')?.doc).toBe(ROW_SYNTAX.stack.doc)
-    expect(at('<{plant} | {heat}‸>')?.doc).toBe(ROW_SYNTAX.stack.doc)
+    expect(at('‸[{plant}]')).toEqual({ from: 0, to: 1, doc: RICH_TEXT_SYNTAX.box.doc })
+    expect(at('[{plant}‸]')?.doc).toBe(RICH_TEXT_SYNTAX.box.doc)
+    expect(at('‸<{plant} | {heat}>')?.doc).toBe(RICH_TEXT_SYNTAX.stack.doc)
+    expect(at('<{plant} | {heat}‸>')?.doc).toBe(RICH_TEXT_SYNTAX.stack.doc)
     expect(at('<{plant} ‸| {heat}>')).toEqual({ from: 9, to: 10, doc: 'A line break' })
     expect(at('{plant} ‸| {plant}')?.doc).toBe('A line break')
     expect(at('{plant} |3‸mm| {plant}')).toEqual({
@@ -72,7 +72,7 @@ describe('explainAt', () => {
   it('reads a broken row as far as it goes', () => {
     expect(at('{pl‸ant')?.icon).toEqual({ name: 'plant' })
     expect(at('{plant} {r‸ed')?.doc).toMatch(/any-player/)
-    expect(at('‸[{plant}')?.doc).toBe(ROW_SYNTAX.box.doc)
+    expect(at('‸[{plant}')?.doc).toBe(RICH_TEXT_SYNTAX.box.doc)
     // braces in rules text are an error, not icons; an unclosed one runs to the end
     expect(at('(Gain a {pl‸ant}.)')).toBeUndefined()
     expect(at('(Gain a {pl‸ant}.')).toBeUndefined()
@@ -81,7 +81,7 @@ describe('explainAt', () => {
   })
 
   it('reads the requirement and the disc by their own rules', () => {
-    const req = ROW_FIELDS.requirement
+    const req = RICH_TEXT_FIELDS.requirement
     expect(at('max 6% {oxy‸gen}', req)?.icon).toEqual({ name: 'oxygen' })
     expect(at('m‸ax 6% {oxygen}', req)).toEqual({
       from: 0,
@@ -98,8 +98,8 @@ describe('explainAt', () => {
     // one line: a break is an error, except inside a box
     expect(at('{plant} ‸| {heat}', req)).toBeUndefined()
     expect(at('[{plant} ‸| {heat}]', req)?.doc).toBe('A line break')
-    expect(at('‸[{plant}]', req)?.doc).toBe(ROW_SYNTAX.box.doc)
-    const vp = ROW_FIELDS.vp
+    expect(at('‸[{plant}]', req)?.doc).toBe(RICH_TEXT_SYNTAX.box.doc)
+    const vp = RICH_TEXT_FIELDS.vp
     expect(at('1 {/ 2 mic‸robe}', vp)?.icon).toEqual({ name: 'microbe' })
     expect(at('‸1 {/ 2 microbe}', vp)).toBeUndefined()
     // nor boxes: the brackets are words there

@@ -30,7 +30,7 @@ export const TOP_LEVEL_FIELDS = {
   },
   body: { doc: 'Rows of the box under the art (a list of row strings, or one string)' },
   vp: {
-    doc: 'Victory points: an integer, or a row set in the disc, like "1 {/ 2 microbe}"',
+    doc: 'Victory points: an integer, or card text set in the disc, like "1 {/ 2 microbe}"',
   },
   flavor: { doc: 'Flavor text (italic, bottom of the body box)' },
   number: { doc: 'Card number (bottom-right box); an integer is padded to 3 digits' },
@@ -115,7 +115,7 @@ function asStringScalar(ctx: Ctx, node: Node | null | undefined, what: string): 
   return undefined
 }
 
-/** Validate row items inside a scalar: tokenizer errors, each mapped to
+/** Validate rich text inside a scalar: tokenizer errors, each mapped to
  *  its exact range inside the scalar when possible. Undefined when
  *  anything is wrong. */
 function validateItems(ctx: Ctx, node: Scalar, opts: RichTextOptions): RichTextItem[] | undefined {

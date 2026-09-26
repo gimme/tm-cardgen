@@ -3,10 +3,10 @@ import { ICON_NAMES } from '../icons.ts'
 import { iconSample } from '../layout/chunks.ts'
 import { renderSvgMarkup } from '../render/svgString.ts'
 import { parseRichText } from './richtext.ts'
-import { ICON_GROUPS, ROW_SYNTAX } from './syntax.ts'
+import { ICON_GROUPS, RICH_TEXT_SYNTAX } from './syntax.ts'
 
-describe('ROW_SYNTAX', () => {
-  it.each(Object.values(ROW_SYNTAX))('$form parses clean', ({ form, doc }) => {
+describe('RICH_TEXT_SYNTAX', () => {
+  it.each(Object.values(RICH_TEXT_SYNTAX))('$form parses clean', ({ form, doc }) => {
     const { errors, warnings } = parseRichText(form)
     expect(errors).toEqual([])
     expect(warnings).toEqual([])
@@ -21,7 +21,7 @@ describe('ICON_GROUPS', () => {
     const words = ICON_NAMES.filter((n) => /^[a-z]/.test(n))
     expect([...listed].sort()).toEqual([...words].sort())
     for (const mark of ICON_NAMES.filter((n) => !/^[a-z]/.test(n)))
-      expect(Object.values(ROW_SYNTAX).some((r) => r.form.includes(mark))).toBe(true)
+      expect(Object.values(RICH_TEXT_SYNTAX).some((r) => r.form.includes(mark))).toBe(true)
   })
 
   it('draws each icon on its own', () => {

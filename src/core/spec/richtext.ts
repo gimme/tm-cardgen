@@ -1,4 +1,4 @@
-// Tokenizer for the row language of body and active rows, the requirement
+// Tokenizer for the rich text of body and active rows, the requirement
 // and the VP disc; syntax.ts lists its forms. Modifiers mark one neighbour
 // and never reach past their braces. Lowercase words are reserved for icon
 // names, `red` and the mm unit. There are no escapes: brackets are
@@ -33,7 +33,7 @@ export interface IconToken extends Grouped {
   end: number
 }
 
-/** {3mm}: `w` replaces the row gap between its neighbours; negative overlaps them. */
+/** {3mm}: `w` replaces the gap between its neighbours; negative overlaps them. */
 export interface SpacerItem extends Grouped {
   kind: 'spacer'
   w: number
@@ -61,8 +61,7 @@ export interface BreakItem {
   end: number
 }
 
-/** A production box or a bare column: items with breaks between the lines,
- *  each line a row. */
+/** A production box or a bare column: items with breaks between the lines. */
 export interface Stack {
   kind: 'stack'
   /** painted as the production box */
@@ -110,7 +109,7 @@ export const GAPPED_BREAK = /^\|\s*([+-]?(?:\d+\.?\d*|\.\d+))mm\s*\|/
 /** the same without its closing pipe, `|3mm`: reported with a hint */
 export const HALF_BREAK = /^\|\s*([+-]?(?:\d+\.?\d*|\.\d+))mm(?=\s|$)/
 
-/** Tokenize a row. Never throws; errors carry offsets, items are best effort. */
+/** Tokenize rich text. Never throws; errors carry offsets, items are best effort. */
 export function parseRichText(src: string, opts: RichTextOptions = {}): RichTextResult {
   const stacks = opts.stacks ?? true
   const rules = opts.rules ?? true
@@ -122,8 +121,8 @@ export function parseRichText(src: string, opts: RichTextOptions = {}): RichText
 
   let i = 0
 
-  /** The items up to the bracket closing `closer`, or to the end of the row
-   *  when there is none, with `i` left after it. `[` and `<` recurse. */
+  /** The items up to the bracket closing `closer`, or to the end of the
+   *  source when there is none, with `i` left after it. `[` and `<` recurse. */
   function sequence(closer?: ']' | '>'): { items: RichTextItem[]; closed: boolean } {
     const items: RichTextItem[] = []
     let text = ''
@@ -197,7 +196,7 @@ export function parseRichText(src: string, opts: RichTextOptions = {}): RichText
         const inner = sequence(box ? ']' : '>')
         if (!inner.closed) {
           err(`unclosed '${ch}' ${what}`, start, src.length)
-          // recover: keep the orphaned items in the row
+          // recover: keep the orphaned items
           items.push(...inner.items)
         } else if (!inner.items.some((it) => it.kind !== 'break')) {
           err(`empty ${what}`, start, i)

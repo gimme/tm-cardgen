@@ -1,16 +1,16 @@
 import { yaml } from '@codemirror/lang-yaml'
 import { EditorState } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
-import { rowHelpAt } from './rowHelp.ts'
+import { richTextHelpAt } from './richTextHelp.ts'
 
 /** The help for hovering at the ‸ in `doc`, with the pointer on the side it marks: after it by default. */
 function hover(doc: string, side: -1 | 1 = 1) {
   const pos = doc.indexOf('‸')
   const state = EditorState.create({ doc: doc.replace('‸', ''), extensions: [yaml()] })
-  return rowHelpAt(state, pos, side)
+  return richTextHelpAt(state, pos, side)
 }
 
-describe('rowHelpAt', () => {
+describe('richTextHelpAt', () => {
   it('explains a body row, with document offsets', () => {
     expect(hover('body:\n  - "{pl‸ant} {->}"')).toEqual({
       from: 12,

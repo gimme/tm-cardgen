@@ -1,9 +1,9 @@
-// layoutCard: CardSpec to CardLayout. Rows stack down at a fixed gap, each
-// centered on the card axis; a row's elements center vertically on each
-// other, and rules text takes the width the others leave. The frame sizes
-// its box to the rows. A VP disc narrows the rows beside it; a row too wide
-// for that moves up clear of it. Flavor is bottom-anchored on a fixed
-// baseline. The renderers only serialize the result.
+// layoutCard: CardSpec to CardLayout. The rows' lines stack down at a fixed
+// gap, each centered on the card axis; a line's elements center vertically
+// on each other, and rules text takes the width the others leave. The frame
+// sizes its box to the lines. A VP disc narrows the lines beside it; a line
+// too wide for that moves up clear of it. Flavor is bottom-anchored on a
+// fixed baseline. The renderers only serialize the result.
 import { CARD_H, CARD_W, type Rect } from '../units.ts'
 import { backdropLuma } from '../frame/backdrop.ts'
 import { nameSeed } from '../frame/crystal.ts'
@@ -42,7 +42,7 @@ export interface LayoutContext {
   artBrightness?: (file: string, region: Rect) => number | undefined
 }
 
-const VP_ROW_CLEAR = 1.0 // a row pushed clear of the VP disc keeps this above it
+const VP_LINE_CLEAR = 1.0 // a line pushed clear of the VP disc keeps this above it
 const ART_OVERSHOOT = 0.8 // art drawn past the window so the rim blends
 
 // ---- artist credit -------------------------------------------------------
@@ -79,7 +79,7 @@ export function titleSize(name: string, ts: TitleStyle, m: TextMeasurer): number
 }
 
 // ---- the flow ------------------------------------------------------------
-/** The column rows center in. */
+/** The column lines center in. */
 interface Flow {
   cx: number
   w: number
@@ -87,24 +87,24 @@ interface Flow {
 
 const BODY_FLOW: Flow = { cx: COMMON.cx, w: COMMON.flow.w }
 
-/** the widest a row may be: the body box, which the flavor fills. Text
+/** the widest a line may be: the body box, which the flavor fills. Text
  *  wraps at the flow's width, short of that; icons may run out to it. */
-const ROW_LIMIT = COMMON.flavor.w
+const LINE_LIMIT = COMMON.flavor.w
 
-/** the width left of the VP disc, and the y a row must clear when it does
+/** the width left of the VP disc, and the y a line must clear when it does
  *  not fit there */
 const VP = (() => {
   const left = BODY_FLOW.cx - BODY_FLOW.w / 2
   const right = COMMON.vpRect.x + COMMON.vpMargin - COMMON.vpClear
   return {
     corridor: { cx: (left + right) / 2, w: right - left } as Flow,
-    clearY: COMMON.vpRect.y + COMMON.vpMargin - VP_ROW_CLEAR,
+    clearY: COMMON.vpRect.y + COMMON.vpMargin - VP_LINE_CLEAR,
   }
 })()
 
 interface PlacedFlow {
   nodes: LayoutNode[]
-  /** top edge of the first row (= `bottom` with no rows) */
+  /** top edge of the first line (= `bottom` with no lines) */
   top: number
 }
 
@@ -141,8 +141,9 @@ function placeFlow(
   return { nodes, top }
 }
 
-/** Rows in [top, bottom], centered when the box is taller. Centering can
- *  lift rows clear of the disc, so placement repeats until it settles. */
+/** The rows' lines in [top, bottom], centered when the box is taller.
+ *  Centering can lift lines clear of the disc, so placement repeats until
+ *  it settles. */
 function centerFlow(
   engine: Engine,
   rows: Row[],
@@ -164,10 +165,12 @@ function centerFlow(
   return placed.nodes
 }
 
-/** Warn on any row wider than the body box. */
+/** Warn on any row with a line wider than the body box, numbered as the
+ *  row is written: a row's own `|` breaks do not count. */
 function checkRowWidths(engine: Engine, rows: Row[], flow: Flow, what: string) {
-  flowLines(rows).forEach((line, i) => {
-    const over = engine.lineChunk(line, bodyStyle(1), flow.w).w - ROW_LIMIT
+  rows.forEach((row, i) => {
+    const widths = flowLines([row]).map((line) => engine.lineChunk(line, bodyStyle(1), flow.w).w)
+    const over = Math.max(0, ...widths) - LINE_LIMIT
     if (over > 0.05) engine.warn(`${what} row ${i + 1} is ${over.toFixed(1)}mm too wide — split it`)
   })
 }
@@ -522,7 +525,7 @@ function vpNodes(spec: CardSpec, engine: Engine): LayoutNode[] {
     h: vs,
   }
   const alone = spec.vp.length === 1
-  const content = engine.rowChunk(spec.vp, 0, {
+  const content = engine.itemsChunk(spec.vp, 0, {
     ...bodyStyle(1),
     bigSize: V.countSize,
     textSize: alone ? V.flatSize : V.textSize,
@@ -533,7 +536,7 @@ function vpNodes(spec: CardSpec, engine: Engine): LayoutNode[] {
     iconH: V.iconH,
     gap: { tight: V.gap, loose: V.gap },
   })
-  // the visible disc's chord at the row's height
+  // the visible disc's chord at the content's height
   const r = vs / 2 - COMMON.vpMargin
   const room = 2 * Math.sqrt(Math.max(0, r * r - (content.h / 2) ** 2))
   if (content.w > room + 0.05)

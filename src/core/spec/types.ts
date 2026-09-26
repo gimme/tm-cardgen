@@ -11,7 +11,9 @@ export interface ArtSpec {
   offset: [number, number]
 }
 
-/** One row string as written, with a break item wherever a bare `|` split it. */
+/** One string of `body:` or `active:` as written, tokenized: the writer's
+ *  unit. The layout's unit is the line, a row split at each bare `|`
+ *  (layout/chunks.ts flowLines); most rows are one line. */
 export type Row = RichTextItem[]
 
 export interface Requirement {
@@ -19,8 +21,8 @@ export interface Requirement {
   items: RichTextItem[]
 }
 
-/** The disc's contents as a row: bare text is the numeral, braces hold the rest. */
-export type VpSpec = Row
+/** The disc's contents: bare text is the numeral, braces hold the rest. */
+export type VpSpec = RichTextItem[]
 
 export interface CardSpec {
   name: string

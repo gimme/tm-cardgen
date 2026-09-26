@@ -1,5 +1,5 @@
-// Rows measured into chunks: a chunk is a block of layout primitives with
-// its size. The Engine builds them; layout.ts places them on the card.
+// Rich text measured into chunks: a chunk is a block of layout primitives
+// with its size. The Engine builds them; layout.ts places them on the card.
 import { HALO } from '../frame/halo.ts'
 import { COLON, SLASH, slashWidth } from '../frame/operators.ts'
 import type { Pt } from '../frame/paths.ts'
@@ -12,7 +12,7 @@ import { spacedWidth, type FontId, type TextMeasurer } from './measure.ts'
 import { wrapText } from './wrap.ts'
 
 // ---- tunables ------------------------------------------------------------
-/** between lines: the rows of a flow and the lines of a stack alike */
+/** between lines, in a flow and in a stack alike */
 export const LINE_GAP = 2.0
 /** between elements written in one {braces} */
 const TOKEN_GAP = 1.0
@@ -164,7 +164,7 @@ function gapsAcross(chunks: Chunk[], tight: number, loose: number): number {
 }
 
 /** side by side, centered on each other. A note hangs off its host's
- *  top-right corner and rides above the row's height like the printed ones. */
+ *  top-right corner and rides above the line's height like the printed ones. */
 function hstack(chunks: Chunk[], tight: number, loose = tight): Chunk {
   const hosted = (i: number) => i > 0 && hosts(chunks[i - 1], chunks[i])
   const h = Math.max(0, ...chunks.filter((_, i) => !hosted(i)).map((c) => c.h))
@@ -199,7 +199,7 @@ function vstack(chunks: Chunk[], gap: number): Chunk {
 }
 
 // ---- lines ---------------------------------------------------------------
-/** a row of items, or the distance a |3mm| break stands for */
+/** the items of one line, or the distance a |3mm| break stands for */
 export type Line = { items: RichTextItem[] } | { space: number }
 
 /** Split at breaks; empty lines drop, a gapped break becomes a spacer line. */
@@ -222,7 +222,7 @@ function toLines(items: RichTextItem[]): Line[] {
   return lines
 }
 
-/** the rows joined by plain breaks, so a bare | in a row is a new row */
+/** the lines of a flow: each row starts one, and a bare | in a row starts another */
 export function flowLines(rows: Row[]): Line[] {
   const items: RichTextItem[] = []
   rows.forEach((row, i) => {
@@ -416,11 +416,11 @@ export class Engine {
 
   lineChunk(line: Line, style: ElementStyle, maxW: number): Chunk {
     if ('space' in line) return { w: 0, h: line.space, nodes: [], spacer: true }
-    return this.rowChunk(line.items, maxW, style)
+    return this.itemsChunk(line.items, maxW, style)
   }
 
   /** (0,0) at the first line's cap top; lines center when the block stands
-   *  alone in its row */
+   *  alone in its line */
   rulesChunk(text: string, maxW: number, alone: boolean): Chunk {
     const R = COMMON.rules
     const font: FontId = 'serif'
@@ -475,9 +475,10 @@ export class Engine {
     return { w, h: cap + (lines.length - 1) * advance, nodes }
   }
 
-  /** wrapping elements share the width the fixed ones leave */
-  rowChunk(row: RichTextItem[], maxW: number, style: ElementStyle = bodyStyle(1)): Chunk {
-    const items = row.filter(
+  /** one line of items side by side; the wrapping elements share the
+   *  width the fixed ones leave */
+  itemsChunk(src: RichTextItem[], maxW: number, style: ElementStyle = bodyStyle(1)): Chunk {
+    const items = src.filter(
       (it): it is Exclude<RichTextItem, { kind: 'break' }> => it.kind !== 'break',
     )
     // the wrapping elements stand in at no width until the others are measured
@@ -518,7 +519,7 @@ export class Engine {
       prodScale: req.prodScale,
       prodPad: req.prodPad,
     }
-    return this.rowChunk(withMaxWord(requirement), 0, style)
+    return this.itemsChunk(withMaxWord(requirement), 0, style)
   }
 }
 

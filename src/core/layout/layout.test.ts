@@ -436,6 +436,16 @@ describe('rows', () => {
     expect(right - left).toBeLessThan(COMMON.flavor.w)
     expect((left + right) / 2).toBeCloseTo(COMMON.cx, 5)
   })
+
+  it('numbers a wide row as written, past rows that break into lines', () => {
+    const wide = '{ocean ocean ocean} {ocean ocean ocean}'
+    const body = [row('{plant} | {heat}'), row(`{plant} |3mm| ${wide}`), row(wide)]
+    const messages = layoutCard(card({ body }), ctx).warnings.map((w) => w.message)
+    expect(messages.filter((m) => /too wide/.test(m))).toEqual([
+      expect.stringMatching(/^body row 2 is /),
+      expect.stringMatching(/^body row 3 is /),
+    ])
+  })
 })
 
 describe('stacks and lines', () => {
@@ -564,7 +574,7 @@ describe('the VP circle', () => {
     expect((box.x + right) / 2).toBeCloseTo(COMMON.cx, 5)
   })
 
-  it('moves a row too wide for the corridor up clear of the disc', () => {
+  it('moves a line too wide for the corridor up clear of the disc', () => {
     // wider than the corridor, narrower than the flow
     const wide = '{ocean ocean ocean} {ocean ocean}'
     const withVp = layoutCard(card({ body: [row(wide)], vp }), ctx)

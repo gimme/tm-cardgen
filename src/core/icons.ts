@@ -10,14 +10,14 @@ export type HaloShape =
 interface IconMeta {
   /** width / height of the source image */
   aspect: number
-  /** default rendered height in mm in a body row */
+  /** default rendered height in mm in a body line */
   h: number
   /** a number or X written attached before the name is drawn on it: {25mc} */
   inscribed?: boolean
   /** the shape of the `red` halo, for icons that take one */
   halo?: HaloShape
   /** a footnote mark: hangs off the top-right corner of the element before
-   *  it instead of standing in the row (layout/chunks.ts) */
+   *  it instead of standing in the line (layout/chunks.ts) */
   note?: true
   /** where the asterisk hangs off this icon, mm right and down of the
    *  default: flush against the box's right edge, centered on its top edge */

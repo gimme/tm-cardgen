@@ -66,7 +66,7 @@ export function EditorPane() {
           type="button"
           className={sheetOpen ? 'active' : ''}
           onClick={toggleSheet}
-          title="The row syntax, and every icon by name"
+          title="The card text syntax, and every icon by name"
         >
           Syntax &amp; icons
         </button>
@@ -129,7 +129,7 @@ function SheetHint() {
           strokeLinejoin="round"
         />
       </svg>
-      <span>how a row is written, and every icon by name</span>
+      <span>how card text is written, and every icon by name</span>
     </div>
   )
 }
