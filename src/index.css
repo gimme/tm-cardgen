@@ -9,6 +9,8 @@
   --accent: #e8834a;
   --error: #ff6b6b;
   --warn: #ffc857;
+  /* separators inside a panel, lighter than a border */
+  --hairline: rgb(255 255 255 / 0.07);
 }
 
 * {
@@ -272,13 +274,14 @@ button {
   margin: 0;
 }
 
-/* a hairline between rows, so a wrapped explanation stays with its form;
-   the column gap is the form's padding so the line runs unbroken */
+/* a hairline between rows, so a wrapped explanation stays with its form,
+   and one closing the table; the heading's rule opens it. The column gap
+   is the form's padding so the lines run unbroken */
 .syntax-forms dt,
 .syntax-forms dd {
   margin: 0;
   padding: 5px 0;
-  border-top: 1px solid rgb(255 255 255 / 0.07);
+  border-top: 1px solid var(--hairline);
 }
 
 .syntax-forms dt {
@@ -287,23 +290,29 @@ button {
 
 .syntax-forms dt:first-of-type,
 .syntax-forms dd:first-of-type {
-  padding-top: 0;
   border-top: none;
+}
+
+.syntax-forms dt:last-of-type,
+.syntax-forms dd:last-of-type {
+  border-bottom: 1px solid var(--hairline);
 }
 
 .syntax-forms code {
   white-space: normal;
 }
 
-/* the two parts the button names, each headed; the icon groups sit a
-   notch under the second */
+/* the two parts the button names, each headed and ruled; the icon groups
+   sit a notch under the second as small overlines */
 .sheet-part + .sheet-part {
   margin-top: 24px;
 }
 
 .syntax-sheet h2 {
-  margin: 0 0 8px;
-  font-size: 11px;
+  margin: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -312,8 +321,10 @@ button {
 
 .syntax-sheet h3 {
   margin: 10px 0 5px;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .syntax-sheet ul {
