@@ -105,7 +105,7 @@ export const ICONS: Record<string, IconDef> = {
     halo: 'triangle',
     noteAt: TRIANGLE_NOTE,
   },
-  special: { file: T + 'special.png', aspect: HEX, h: TALL, halo: 'hexagon' },
+  'special-tile': { file: T + 'special.png', aspect: HEX, h: TALL, halo: 'hexagon' },
   trade: {
     file: T + 'trade.png',
     aspect: 374 / 324,

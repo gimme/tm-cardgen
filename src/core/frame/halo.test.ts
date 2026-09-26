@@ -13,7 +13,7 @@ describe('any-player halo', () => {
     expect(shapes(['steel', 'plant', 'heat', 'microbe', 'animal', 'wild', 'tr'])).toEqual(
       new Set(['box']),
     )
-    expect(shapes(['city', 'ocean', 'greenery', 'greenery-no-oxygen', 'special'])).toEqual(
+    expect(shapes(['city', 'ocean', 'greenery', 'greenery-no-oxygen', 'special-tile'])).toEqual(
       new Set(['hexagon']),
     )
     expect(shapes(Object.keys(ICONS).filter((n) => n.endsWith('-tag')))).toEqual(
