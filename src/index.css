@@ -170,10 +170,37 @@ button {
   border-right: 1px solid var(--border);
 }
 
-.editor-host {
+/* the editor, and the first-run hint floating over it */
+.editor-body {
+  position: relative;
   flex: 1;
   min-height: 0;
+}
+
+.editor-host {
+  height: 100%;
   overflow: hidden;
+}
+
+/* the first-run hint: over the editor's bottom-left corner, its arrow
+   ending just above the Icons & syntax button */
+.sheet-hint {
+  position: absolute;
+  left: 14px;
+  bottom: 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  pointer-events: none;
+  color: var(--muted);
+  font-style: italic;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.sheet-hint svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .editor-host .cm-editor {

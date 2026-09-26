@@ -4,6 +4,25 @@ import { makeEditorState } from '../../editor/cmSetup.ts'
 import { useStore } from '../../store/useStore.ts'
 import { SyntaxSheet } from './SyntaxSheet.tsx'
 
+/** set once the cheat sheet has been opened; the first-run hint goes then */
+const SHEET_SEEN_KEY = 'tm-cardgen.sheetSeen'
+
+function sheetSeen(): boolean {
+  try {
+    return localStorage.getItem(SHEET_SEEN_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+
+function rememberSheetSeen() {
+  try {
+    localStorage.setItem(SHEET_SEEN_KEY, '1')
+  } catch {
+    // private mode: the hint shows again next time, no harm
+  }
+}
+
 export function EditorPane() {
   const currentId = useStore((s) => s.currentId)
   const textEpoch = useStore((s) => s.textEpoch)
@@ -12,6 +31,15 @@ export function EditorPane() {
   const stale = useStore((s) => s.stale)
   const hostRef = useRef<HTMLDivElement>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [hint, setHint] = useState(() => !sheetSeen())
+
+  const toggleSheet = () => {
+    setSheetOpen((open) => !open)
+    if (hint) {
+      rememberSheetSeen()
+      setHint(false)
+    }
+  }
 
   useEffect(() => {
     if (!hostRef.current || currentId === undefined) return
@@ -29,16 +57,19 @@ export function EditorPane() {
 
   return (
     <section className="editor-pane">
-      <div ref={hostRef} className="editor-host" />
+      <div className="editor-body">
+        <div ref={hostRef} className="editor-host" />
+        {hint && <SheetHint />}
+      </div>
       {sheetOpen && <SyntaxSheet />}
       <footer className="editor-status">
         <button
           type="button"
           className={sheetOpen ? 'active' : ''}
-          onClick={() => setSheetOpen((open) => !open)}
-          title="The row syntax, and every icon by name"
+          onClick={toggleSheet}
+          title="Every icon by name, and the row syntax"
         >
-          Syntax
+          Icons &amp; syntax
         </button>
         <span className="status-spacer" />
         {stale && <span className="status-stale">preview stale</span>}
@@ -77,5 +108,25 @@ function SaveState({ state }: { state: 'saved' | 'saving' | 'error' }) {
         />
       </svg>
     </span>
+  )
+}
+
+/** A first-run nudge towards the cheat sheet, floating over the editor's
+ *  corner with a hand-drawn arrow at the button; gone once it is opened. */
+function SheetHint() {
+  return (
+    <div className="sheet-hint" aria-hidden="true">
+      <svg viewBox="0 0 40 56" width="40" height="56">
+        <path
+          d="M37 4 C20 2 28 20 16 28 C6 35 7 43 9 51 M2 44 C4 48 7 50 9 51 C11 49 14 45 15 42"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span>every icon by name, and how a row is written</span>
+    </div>
   )
 }
