@@ -155,7 +155,7 @@ const TAG_NAMES = [
   'planetary',
   'infrastructure',
   'radioactive',
-  'multitag',
+  'multi',
 ] as const
 
 export const KNOWN_TAGS: readonly string[] = TAG_NAMES

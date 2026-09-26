@@ -25,6 +25,8 @@ Deviations from upstream:
 - `globalparameters/oxygen.png` — transparent margin cropped off; the disc
   fills the box.
 - `resources/fighter.png` — cropped to the cube, soft shadow and all.
+- `tags/multi.png` — upstream's `tags/multitag.png`, renamed, with the black
+  ring the other tags carry drawn onto it.
 
 Terraforming Mars is a trademark of FryxGames; this is unofficial fan
 content for personal use.
