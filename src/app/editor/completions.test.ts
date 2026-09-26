@@ -30,7 +30,7 @@ describe('cardCompletions', () => {
     expect(completeAtEnd('body:\n  - "{+')).toBeNull()
   })
 
-  it('offers red and the operators in braces too, all as words', () => {
+  it('offers red and the operators in braces too, after the icons', () => {
     const options = (doc: string) => completeAtEnd(doc)?.options ?? []
     const opened = options('body:\n  - "{')
     const labels = opened.map((o) => o.label)
@@ -40,6 +40,11 @@ describe('cardCompletions', () => {
     expect(applied('body:\n  - "{re', 'red')).toBe('body:\n  - "{red')
     expect(new Set(opened.map((o) => o.type))).toEqual(new Set(['word']))
     expect(opened.every((o) => o.info === undefined)).toBe(true)
+    // the icons first, then red, then the symbols
+    const boost = (label: string) => opened.find((o) => o.label === label)?.boost
+    expect(boost('plant')).toBeUndefined()
+    expect(boost('red')).toBe(-1)
+    for (const symbol of ['*', '+', '-', '/', ':', '=', '->']) expect(boost(symbol)).toBe(-2)
   })
 
   it('carries the icon an icon name draws in the list; the marks and words none', () => {
@@ -50,10 +55,10 @@ describe('cardCompletions', () => {
       type: 'word',
       icon: { name: 'plant' },
     })
-    expect(option('body:\n  - "{', '->')).toMatchObject({ icon: { name: '->' } })
-    expect(option('body:\n  - "{', '*')).toEqual({ label: '*', type: 'word' })
-    expect(option('body:\n  - "{', 'red')).toEqual({ label: 'red', type: 'word' })
-    expect(option('body:\n  - "{', ':')).toEqual({ label: ':', type: 'word' })
+    expect(option('body:\n  - "{', '->')).toMatchObject({ icon: { name: '->' }, boost: -2 })
+    expect(option('body:\n  - "{', '*')).toEqual({ label: '*', type: 'word', boost: -2 })
+    expect(option('body:\n  - "{', 'red')).toEqual({ label: 'red', type: 'word', boost: -1 })
+    expect(option('body:\n  - "{', ':')).toEqual({ label: ':', type: 'word', boost: -2 })
     // a glued number is written on the coin
     expect(option('body:\n  - "{25m', 'mc')).toMatchObject({
       icon: { name: 'mc', inscription: '25' },

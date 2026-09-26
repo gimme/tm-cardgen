@@ -25,14 +25,19 @@ const iconWord = (name: string, inscription?: string): IconCompletion => ({
   icon: inscription === undefined ? { name } : { name, inscription },
 })
 
+/** after the icons come the modifier, then the symbols */
+const MODIFIER = { boost: -1 }
+const SYMBOL = { boost: -2 }
+
 /** everything a word in braces can be: the icons, then `red` and the operators */
 const BRACE_WORDS: Completion[] = [
-  ...ICON_NAMES.map((name): Completion =>
+  ...ICON_NAMES.map((name): Completion => {
     // a footnote mark is a glyph like the operators, not an icon to draw
-    ICONS[name].note ? { label: name, type: 'word' } : iconWord(name),
-  ),
-  { label: 'red', type: 'word' },
-  ...OPERATORS.map((op): Completion => ({ label: op, type: 'word' })),
+    const word = ICONS[name].note ? { label: name, type: 'word' } : iconWord(name)
+    return /^[a-z]/.test(name) ? word : { ...word, ...SYMBOL }
+  }),
+  { label: 'red', type: 'word', ...MODIFIER },
+  ...OPERATORS.map((op): Completion => ({ label: op, type: 'word', ...SYMBOL })),
 ]
 
 export function cardCompletions(
