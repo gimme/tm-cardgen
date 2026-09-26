@@ -1,14 +1,8 @@
 // The row-language cheat sheet under the editor: each form and what it
 // prints, then every icon by name, drawn by the card renderer.
 import { Fragment, useId, useMemo } from 'react'
-import { fmt, ICON_GROUPS, iconSample, renderSvgMarkup, ROW_SYNTAX } from '../../../core/index.ts'
-import { makePreviewResolver } from '../../services/assetService.ts'
-
-/** the icons print at this scale: a resource cube 16px tall */
-const PX_PER_MM = 2.4
-
-// the icons are bundled assets, never user art
-const resolveAsset = makePreviewResolver(() => undefined)
+import { ICON_GROUPS, ROW_SYNTAX } from '../../../core/index.ts'
+import { iconMarkup } from '../../editor/iconMarkup.ts'
 
 export function SyntaxSheet() {
   return (
@@ -48,18 +42,17 @@ function Doc({ text }: { text: string }) {
 }
 
 function IconSample({ name }: { name: string }) {
-  // the coin's gradients carry ids; each mounted <svg> scopes its own
+  // each mounted <svg> scopes its ids; ':' breaks url() fragment references
   const idPrefix = `${useId().replace(/[^a-zA-Z0-9_-]/g, '')}-`
-  const { w, h, markup } = useMemo(() => {
-    const chunk = iconSample(name)
-    return { w: chunk.w, h: chunk.h, markup: renderSvgMarkup(chunk, { resolveAsset, idPrefix }) }
-  }, [name, idPrefix])
-  // whole pixels: a fractional edge row gets clipped off
+  const { viewBox, width, height, markup } = useMemo(
+    () => iconMarkup(name, idPrefix),
+    [name, idPrefix],
+  )
   return (
     <svg
-      viewBox={`0 0 ${fmt(w)} ${fmt(h)}`}
-      width={Math.round(w * PX_PER_MM)}
-      height={Math.round(h * PX_PER_MM)}
+      viewBox={viewBox}
+      width={width}
+      height={height}
       xmlns="http://www.w3.org/2000/svg"
       dangerouslySetInnerHTML={{ __html: markup }}
     />

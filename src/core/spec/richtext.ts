@@ -44,7 +44,7 @@ export interface SpacerItem extends Grouped {
 /** A word of exactly one of these, in braces, is an operator. */
 export const OPERATORS = ['+', '-', '=', ':', '/'] as const
 export type Operator = (typeof OPERATORS)[number]
-const isOperator = (w: string): w is Operator => (OPERATORS as readonly string[]).includes(w)
+export const isOperator = (w: string): w is Operator => (OPERATORS as readonly string[]).includes(w)
 
 export interface OperatorItem extends Grouped {
   kind: 'op'
@@ -280,7 +280,7 @@ export function parseRichText(src: string, opts: RichTextOptions = {}): RichText
 }
 
 /** index of the ')' matching the '(' at `open`, or -1 */
-function matchParen(src: string, open: number): number {
+export function matchParen(src: string, open: number): number {
   let depth = 0
   for (let i = open; i < src.length; i++) {
     if (src[i] === '(') depth++
@@ -292,10 +292,10 @@ function matchParen(src: string, open: number): number {
 type Report = (message: string, start: number, end: number) => void
 
 /** a spacer word: a signed decimal with the mm unit attached, `-1.5mm` */
-const SPACER = /^([+-]?(?:\d+\.?\d*|\.\d+))mm$/
+export const SPACER = /^([+-]?(?:\d+\.?\d*|\.\d+))mm$/
 /** an inscribed icon with its count attached, `25mc` `Xmc` `-2mc` */
 const INSCRIBED = /^([+-]?\d+|X)([a-z][a-z-]*)$/
-const inscribed = (w: string): { count: string; name: string } | undefined => {
+export const inscribed = (w: string): { count: string; name: string } | undefined => {
   const m = INSCRIBED.exec(w)
   return m && ICONS[m[2]]?.inscribed ? { count: m[1], name: m[2] } : undefined
 }

@@ -11,6 +11,7 @@ import { cardCompletions } from './completions.ts'
 import { continueList, openRows } from './continueList.ts'
 import { keyHelp } from './keyHelp.ts'
 import { cardLinter } from './lintSource.ts'
+import { rowHelp } from './rowHelp.ts'
 
 export function makeEditorState(text: string, onChange: (text: string) => void): EditorState {
   return EditorState.create({
@@ -37,6 +38,7 @@ export function makeEditorState(text: string, onChange: (text: string) => void):
       cardLinter,
       lintGutter(),
       keyHelp,
+      rowHelp,
       autocompletion({
         override: [(context) => cardCompletions(context, getServices().art.files())],
         // cardCompletions is synchronous, so the popup delays buy nothing

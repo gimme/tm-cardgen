@@ -1,5 +1,8 @@
-import { parseRichText, type RichTextError } from './richtext.ts'
+import { parseRichText, type RichTextError, type RichTextOptions } from './richtext.ts'
 import type { Requirement } from './types.ts'
+
+/** the requirement is one line, boxes allowed, no rules text */
+export const REQUIREMENT_SYNTAX: RichTextOptions = { stacks: true, rules: false, lines: false }
 
 /** Parse a `requirement:` string: optional leading `max`, then row items. */
 export function parseRequirement(src: string): {
@@ -10,11 +13,7 @@ export function parseRequirement(src: string): {
   const maxMatch = /^\s*max\s+/.exec(src)
   const rest = maxMatch ? src.slice(maxMatch[0].length) : src
   const offset = maxMatch ? maxMatch[0].length : 0
-  const { items, errors, warnings } = parseRichText(rest, {
-    stacks: true,
-    rules: false,
-    lines: false,
-  })
+  const { items, errors, warnings } = parseRichText(rest, REQUIREMENT_SYNTAX)
   const rebase = (n: number) => n + offset
   for (const item of items) {
     item.start = rebase(item.start)

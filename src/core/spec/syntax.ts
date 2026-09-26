@@ -14,7 +14,7 @@ export interface SyntaxEntry {
 /** The forms in the cheat sheet's order, keyed so the editor can quote
  *  one of them. */
 export const ROW_SYNTAX = {
-  icon: { form: '{plant}', doc: 'An icon (the names are listed below)' },
+  icon: { form: '{plant}', doc: 'An icon by its name' },
   group: { form: '{plant plant}', doc: 'Icons that belong together share braces and sit closer' },
   big: {
     form: '{3 plant} {OR} {STEAL 2}',
@@ -33,9 +33,9 @@ export const ROW_SYNTAX = {
     doc: 'A spacer: sets the gap between its neighbours in mm; negative overlaps them',
   },
   box: { form: '[{plant}]', doc: 'A production box' },
-  boxLine: {
+  line: {
     form: '[{plant} | {- heat}]',
-    doc: '`|` starts a new line inside a production box or stack',
+    doc: '`|` starts a new line, in the row or inside a production box or stack',
   },
   stack: {
     form: '<{plant} | {heat}>',

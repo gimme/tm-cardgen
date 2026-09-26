@@ -92,13 +92,13 @@ function inscriptionNode(text: string, boxW: number, boxH: number, h: number): T
 }
 
 /** A registered icon by itself at its body height, for showing it off. An
- *  inscribed one wears an X where its number goes. */
-export function iconSample(name: string): Chunk {
+ *  inscribed one wears `inscription`, or an X where its number goes. */
+export function iconSample(name: string, inscription?: string): Chunk {
   const def = ICONS[name]
   const h = def.h
   const w = h * def.aspect
   const nodes = [iconNode(def, 0, 0, w, h)]
-  if (def.inscribed) nodes.push(inscriptionNode('X', w, h, h))
+  if (def.inscribed) nodes.push(inscriptionNode(inscription ?? 'X', w, h, h))
   return { w, h, nodes }
 }
 

@@ -1,5 +1,8 @@
-import { parseRichText, type RichTextError } from './richtext.ts'
+import { parseRichText, type RichTextError, type RichTextOptions } from './richtext.ts'
 import type { VpSpec } from './types.ts'
+
+/** the disc holds one line of icons and text, nothing boxed */
+export const VP_SYNTAX: RichTextOptions = { stacks: false, rules: false, lines: false }
 
 export interface VpParseResult {
   /** absent when anything is an error */
@@ -20,11 +23,7 @@ export function parseVp(value: unknown): VpParseResult {
         ? value
         : undefined
   if (src === undefined) return { errors: [{ message: VP_USAGE, start: 0, end: 0 }], warnings: [] }
-  const { items, errors, warnings } = parseRichText(src, {
-    stacks: false,
-    rules: false,
-    lines: false,
-  })
+  const { items, errors, warnings } = parseRichText(src, VP_SYNTAX)
   if (errors.length > 0) return { errors, warnings }
   if (items.length === 0)
     return { errors: [{ message: VP_USAGE, start: 0, end: src.length }], warnings }
