@@ -30,18 +30,35 @@ describe('cardCompletions', () => {
     expect(completeAtEnd('body:\n  - "{+')).toBeNull()
   })
 
-  it('offers red and the operators in braces too, with their explanations', () => {
-    const labels = (doc: string) => completeAtEnd(doc)?.options.map((o) => o.label) ?? []
-    const opened = labels('body:\n  - "{')
+  it('offers red and the operators in braces too, all as words', () => {
+    const options = (doc: string) => completeAtEnd(doc)?.options ?? []
+    const opened = options('body:\n  - "{')
+    const labels = opened.map((o) => o.label)
     for (const word of ['plant', 'red', '+', '-', '=', ':', '/', '->', '*'])
-      expect(opened).toContain(word)
-    expect(labels('body:\n  - "{plant ')).toEqual(opened)
+      expect(labels).toContain(word)
+    expect(options('body:\n  - "{plant ')).toEqual(opened)
     expect(applied('body:\n  - "{re', 'red')).toBe('body:\n  - "{red')
-    const info = (label: string) =>
-      completeAtEnd('body:\n  - "{')?.options.find((o) => o.label === label)?.info
-    expect(info('red')).toBe('red draws the any-player ring around the icon after it')
-    expect(info(':')).toBe('Operators, as in {city : 2mc}')
-    expect(info('plant')).toBeUndefined()
+    expect(new Set(opened.map((o) => o.type))).toEqual(new Set(['word']))
+    expect(opened.every((o) => o.info === undefined)).toBe(true)
+  })
+
+  it('carries the icon an icon name draws in the list; the marks and words none', () => {
+    const option = (doc: string, label: string) =>
+      completeAtEnd(doc)?.options.find((o) => o.label === label)
+    expect(option('body:\n  - "{', 'plant')).toEqual({
+      label: 'plant',
+      type: 'word',
+      icon: { name: 'plant' },
+    })
+    expect(option('body:\n  - "{', '->')).toMatchObject({ icon: { name: '->' } })
+    expect(option('body:\n  - "{', '*')).toEqual({ label: '*', type: 'word' })
+    expect(option('body:\n  - "{', 'red')).toEqual({ label: 'red', type: 'word' })
+    expect(option('body:\n  - "{', ':')).toEqual({ label: ':', type: 'word' })
+    // a glued number is written on the coin
+    expect(option('body:\n  - "{25m', 'mc')).toMatchObject({
+      icon: { name: 'mc', inscription: '25' },
+    })
+    expect(option('body:\n  - "{3', 'mm')).toEqual({ label: 'mm', type: 'word' })
   })
 
   it('offers nothing right after a mark or an operator', () => {

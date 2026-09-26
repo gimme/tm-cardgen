@@ -3,24 +3,36 @@ import {
   ART_FIELDS,
   gluedWords,
   ICON_NAMES,
+  ICONS,
   KNOWN_TAGS,
   OPERATORS,
-  plainDoc,
-  ROW_SYNTAX,
   TOP_LEVEL_FIELDS,
   yamlFileName,
 } from '../../core/index.ts'
 
-/** everything a word in braces can be: the icons, then `red` and the
- *  operators, each with the cheat sheet's words on it */
+/** A word in braces has the type `word`: the list gives those an icon
+ *  column (completionIcons.ts), and an icon name carries the icon to draw
+ *  there, with the number written on it. */
+export interface IconCompletion extends Completion {
+  icon: { name: string; inscription?: string }
+}
+
+export const hasIcon = (c: Completion): c is IconCompletion => 'icon' in c
+
+const iconWord = (name: string, inscription?: string): IconCompletion => ({
+  label: name,
+  type: 'word',
+  icon: inscription === undefined ? { name } : { name, inscription },
+})
+
+/** everything a word in braces can be: the icons, then `red` and the operators */
 const BRACE_WORDS: Completion[] = [
-  ...ICON_NAMES.map((name): Completion => ({ label: name, type: 'constant' })),
-  { label: 'red', type: 'keyword', info: plainDoc(ROW_SYNTAX.red.doc) },
-  ...OPERATORS.map((op): Completion => ({
-    label: op,
-    type: 'keyword',
-    info: plainDoc(ROW_SYNTAX.operator.doc),
-  })),
+  ...ICON_NAMES.map((name): Completion =>
+    // a footnote mark is a glyph like the operators, not an icon to draw
+    ICONS[name].note ? { label: name, type: 'word' } : iconWord(name),
+  ),
+  { label: 'red', type: 'word' },
+  ...OPERATORS.map((op): Completion => ({ label: op, type: 'word' })),
 ]
 
 export function cardCompletions(
@@ -69,12 +81,15 @@ export function cardCompletions(
     if (/^[+-]$/.test(icon[1])) return null
     // a word starts after the brace or a space, not right after {-> or {city :
     if (icon[1] === '' && !/[\s{]$/.test(before)) return null
-    // a number glued to the front completes only to a coin or a spacer
+    // a number glued to the front completes only to a coin or a spacer; the
+    // coin is drawn with the number on it
     const glued = /^([+-]?[\d.]+|X)([a-z]*)$/.exec(icon[1])
     if (glued) {
       return {
         from: context.pos - glued[2].length,
-        options: gluedWords(glued[1]).map((name) => ({ label: name, type: 'constant' })),
+        options: gluedWords(glued[1]).map((name): Completion =>
+          ICON_NAMES.includes(name) ? iconWord(name, glued[1]) : { label: name, type: 'word' },
+        ),
         validFor: /^[a-zA-Z0-9-]*$/,
       }
     }

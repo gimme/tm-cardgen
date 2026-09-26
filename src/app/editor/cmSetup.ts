@@ -7,6 +7,7 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import { EditorView, keymap } from '@codemirror/view'
 import { basicSetup } from 'codemirror'
 import { getServices } from '../store/services.ts'
+import { optionIcons, optionIconTheme } from './completionIcons.ts'
 import { cardCompletions } from './completions.ts'
 import { continueList, openRows } from './continueList.ts'
 import { keyHelp } from './keyHelp.ts'
@@ -44,7 +45,11 @@ export function makeEditorState(text: string, onChange: (text: string) => void):
         // cardCompletions is synchronous, so the popup delays buy nothing
         activateOnTypingDelay: 0,
         interactionDelay: 0,
+        // the icon column draws the icons a word in braces names
+        icons: false,
+        addToOptions: [optionIcons],
       }),
+      optionIconTheme,
       EditorView.updateListener.of((update) => {
         if (update.docChanged) onChange(update.state.doc.toString())
       }),

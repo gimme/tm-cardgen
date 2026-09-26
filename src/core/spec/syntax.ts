@@ -52,11 +52,6 @@ export const ROW_SYNTAX = {
   },
 } satisfies Record<string, SyntaxEntry>
 
-/** a doc as plain text, its backticks dropped */
-export function plainDoc(doc: string): string {
-  return doc.replaceAll('`', '')
-}
-
 export interface IconGroup {
   title: string
   names: string[]
