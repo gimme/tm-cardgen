@@ -67,9 +67,9 @@ export function EditorPane() {
           type="button"
           className={sheetOpen ? 'active' : ''}
           onClick={toggleSheet}
-          title="Every icon by name, and the row syntax"
+          title="The row syntax, and every icon by name"
         >
-          Icons &amp; syntax
+          Syntax &amp; icons
         </button>
         <span className="status-spacer" />
         {stale && <span className="status-stale">preview stale</span>}
@@ -126,7 +126,7 @@ function SheetHint() {
           strokeLinejoin="round"
         />
       </svg>
-      <span>every icon by name, and how a row is written</span>
+      <span>how a row is written, and every icon by name</span>
     </div>
   )
 }

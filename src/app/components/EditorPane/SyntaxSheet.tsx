@@ -7,31 +7,37 @@ import { iconMarkup } from '../../editor/iconMarkup.ts'
 export function SyntaxSheet() {
   return (
     <div className="syntax-sheet">
-      <dl className="syntax-forms">
-        {Object.values(ROW_SYNTAX).map(({ form, doc }) => (
-          <Fragment key={form}>
-            <dt>
-              <code>{form}</code>
-            </dt>
-            <dd>
-              <Doc text={doc} />
-            </dd>
-          </Fragment>
+      <section className="sheet-part">
+        <h2>Syntax</h2>
+        <dl className="syntax-forms">
+          {Object.values(ROW_SYNTAX).map(({ form, doc }) => (
+            <Fragment key={form}>
+              <dt>
+                <code>{form}</code>
+              </dt>
+              <dd>
+                <Doc text={doc} />
+              </dd>
+            </Fragment>
+          ))}
+        </dl>
+      </section>
+      <section className="sheet-part">
+        <h2>Icons</h2>
+        {ICON_GROUPS.map(({ title, names }) => (
+          <section key={title}>
+            <h3>{title}</h3>
+            <ul>
+              {names.map((name) => (
+                <li key={name}>
+                  <IconSample name={name} />
+                  <code>{name}</code>
+                </li>
+              ))}
+            </ul>
+          </section>
         ))}
-      </dl>
-      {ICON_GROUPS.map(({ title, names }) => (
-        <section key={title}>
-          <h3>{title}</h3>
-          <ul>
-            {names.map((name) => (
-              <li key={name}>
-                <IconSample name={name} />
-                <code>{name}</code>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+      </section>
     </div>
   )
 }
