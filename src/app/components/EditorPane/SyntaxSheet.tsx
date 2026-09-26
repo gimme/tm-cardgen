@@ -14,7 +14,7 @@ export function SyntaxSheet() {
   return (
     <div className="syntax-sheet">
       <dl className="syntax-forms">
-        {ROW_SYNTAX.map(({ form, doc }) => (
+        {Object.values(ROW_SYNTAX).map(({ form, doc }) => (
           <Fragment key={form}>
             <dt>
               <code>{form}</code>

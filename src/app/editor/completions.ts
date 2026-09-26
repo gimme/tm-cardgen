@@ -4,9 +4,24 @@ import {
   gluedWords,
   ICON_NAMES,
   KNOWN_TAGS,
+  OPERATORS,
+  plainDoc,
+  ROW_SYNTAX,
   TOP_LEVEL_FIELDS,
   yamlFileName,
 } from '../../core/index.ts'
+
+/** everything a word in braces can be: the icons, then `red` and the
+ *  operators, each with the cheat sheet's words on it */
+const BRACE_WORDS: Completion[] = [
+  ...ICON_NAMES.map((name): Completion => ({ label: name, type: 'constant' })),
+  { label: 'red', type: 'keyword', info: plainDoc(ROW_SYNTAX.red.doc) },
+  ...OPERATORS.map((op): Completion => ({
+    label: op,
+    type: 'keyword',
+    info: plainDoc(ROW_SYNTAX.operator.doc),
+  })),
+]
 
 export function cardCompletions(
   context: CompletionContext,
@@ -47,20 +62,23 @@ export function cardCompletions(
     return { from: context.pos - word[1].length, options, validFor: /^[a-zA-Z]*$/ }
   }
 
-  // icon names inside { }, after any text or icon: {3 pla… {OR STEAL red m…
+  // a word inside { }, after any text or icon: {3 pla… {OR STEAL red m…
   const icon = /\{[^}]*?([+-]?[a-zA-Z0-9.-]*)$/.exec(before)
   if (icon) {
     // a lone sign is an operator, {+ …, or a coin or spacer in the making
     if (/^[+-]$/.test(icon[1])) return null
+    // a word starts after the brace or a space, not right after {-> or {city :
+    if (icon[1] === '' && !/[\s{]$/.test(before)) return null
     // a number glued to the front completes only to a coin or a spacer
     const glued = /^([+-]?[\d.]+|X)([a-z]*)$/.exec(icon[1])
-    const names = glued ? gluedWords(glued[1]) : ICON_NAMES
-    const word = glued ? glued[2] : icon[1]
-    return {
-      from: context.pos - word.length,
-      options: names.map((name) => ({ label: name, type: 'constant' })),
-      validFor: /^[a-zA-Z0-9-]*$/,
+    if (glued) {
+      return {
+        from: context.pos - glued[2].length,
+        options: gluedWords(glued[1]).map((name) => ({ label: name, type: 'constant' })),
+        validFor: /^[a-zA-Z0-9-]*$/,
+      }
     }
+    return { from: context.pos - icon[1].length, options: BRACE_WORDS, validFor: /^[a-zA-Z0-9-]*$/ }
   }
 
   // tag names inside tags: [ … ] or after `- ` under tags:

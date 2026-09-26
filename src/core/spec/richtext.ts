@@ -42,7 +42,7 @@ export interface SpacerItem extends Grouped {
 }
 
 /** A word of exactly one of these, in braces, is an operator. */
-const OPERATORS = ['+', '-', '=', ':', '/'] as const
+export const OPERATORS = ['+', '-', '=', ':', '/'] as const
 export type Operator = (typeof OPERATORS)[number]
 const isOperator = (w: string): w is Operator => (OPERATORS as readonly string[]).includes(w)
 

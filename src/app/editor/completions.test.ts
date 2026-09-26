@@ -30,6 +30,27 @@ describe('cardCompletions', () => {
     expect(completeAtEnd('body:\n  - "{+')).toBeNull()
   })
 
+  it('offers red and the operators in braces too, with their explanations', () => {
+    const labels = (doc: string) => completeAtEnd(doc)?.options.map((o) => o.label) ?? []
+    const opened = labels('body:\n  - "{')
+    for (const word of ['plant', 'red', '+', '-', '=', ':', '/', '->', '*'])
+      expect(opened).toContain(word)
+    expect(labels('body:\n  - "{plant ')).toEqual(opened)
+    expect(applied('body:\n  - "{re', 'red')).toBe('body:\n  - "{red')
+    const info = (label: string) =>
+      completeAtEnd('body:\n  - "{')?.options.find((o) => o.label === label)?.info
+    expect(info('red')).toBe('red draws the any-player ring around the icon after it')
+    expect(info(':')).toBe('Operators, as in {city : 2mc}')
+    expect(info('plant')).toBeUndefined()
+  })
+
+  it('offers nothing right after a mark or an operator', () => {
+    expect(completeAtEnd('body:\n  - "{->')).toBeNull()
+    expect(completeAtEnd('body:\n  - "{city :')).toBeNull()
+    expect(completeAtEnd('body:\n  - "{plant *')).toBeNull()
+    expect(completeAtEnd('body:\n  - "{city : ')).not.toBeNull()
+  })
+
   it('completes a number glued to the front with the coin or a spacer, keeping it', () => {
     expect(applied('body:\n  - "{25m', 'mc')).toBe('body:\n  - "{25mc')
     expect(applied('body:\n  - "{OR STEAL red 3', 'mc')).toBe('body:\n  - "{OR STEAL red 3mc')

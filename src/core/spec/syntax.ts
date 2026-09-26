@@ -11,38 +11,51 @@ export interface SyntaxEntry {
   doc: string
 }
 
-export const ROW_SYNTAX: SyntaxEntry[] = [
-  { form: '{plant}', doc: 'An icon (the names are listed below)' },
-  { form: '{plant plant}', doc: 'Icons that belong together share braces and sit closer' },
-  {
+/** The forms in the cheat sheet's order, keyed so the editor can quote
+ *  one of them. */
+export const ROW_SYNTAX = {
+  icon: { form: '{plant}', doc: 'An icon (the names are listed below)' },
+  group: { form: '{plant plant}', doc: 'Icons that belong together share braces and sit closer' },
+  big: {
     form: '{3 plant} {OR} {STEAL 2}',
     doc: 'Numbers and keywords print large; keywords are written in CAPS',
   },
-  { form: '{25mc} {Xmc} {-2mc}', doc: 'An amount of megacredits, printed on the coin' },
-  { form: '{->}', doc: 'The action arrow' },
-  { form: '{+} {-} {=} {:} {/}', doc: 'Operators, as in `{city : 2mc}`' },
-  { form: '{red plant}', doc: '`red` draws the any-player ring around the icon after it' },
-  { form: '{plant *}', doc: '`*` attaches the see-rules asterisk to the icon or text before it' },
-  {
+  coin: { form: '{25mc} {Xmc} {-2mc}', doc: 'An amount of megacredits, printed on the coin' },
+  arrow: { form: '{->}', doc: 'The action arrow' },
+  operator: { form: '{+} {-} {=} {:} {/}', doc: 'Operators, as in `{city : 2mc}`' },
+  red: { form: '{red plant}', doc: '`red` draws the any-player ring around the icon after it' },
+  note: {
+    form: '{plant *}',
+    doc: '`*` attaches the see-rules asterisk to the icon or text before it',
+  },
+  spacer: {
     form: '{plant} {3mm} {plant}',
     doc: 'A spacer: sets the gap between its neighbours in mm; negative overlaps them',
   },
-  { form: '[{plant}]', doc: 'A production box' },
-  { form: '[{plant} | {- heat}]', doc: '`|` starts a new line inside a production box or stack' },
-  {
+  box: { form: '[{plant}]', doc: 'A production box' },
+  boxLine: {
+    form: '[{plant} | {- heat}]',
+    doc: '`|` starts a new line inside a production box or stack',
+  },
+  stack: {
     form: '<{plant} | {heat}>',
     doc: 'A stack: items on top of each other, like a production box without the box',
   },
-  {
+  gap: {
     form: '{plant} |3mm| {plant}',
     doc: '`|3mm|` breaks the line, with 3 mm of space in between',
   },
-  { form: '(Gain 3 plants.)', doc: 'The rules text, in the small font' },
-  {
+  rules: { form: '(Gain 3 plants.)', doc: 'The rules text, in the small font' },
+  words: {
     form: 'OPPONENTS MAY NOT REMOVE YOUR {plant}',
     doc: 'Words outside braces print as bold text among the icons, for rules that icons cannot show',
   },
-]
+} satisfies Record<string, SyntaxEntry>
+
+/** a doc as plain text, its backticks dropped */
+export function plainDoc(doc: string): string {
+  return doc.replaceAll('`', '')
+}
 
 export interface IconGroup {
   title: string
