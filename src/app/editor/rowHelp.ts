@@ -46,24 +46,18 @@ function rowFieldOf(state: EditorState, scalar: SyntaxNode): RowField | undefine
 
 function helpDom(help: Explanation): HTMLElement {
   const dom = document.createElement('div')
-  dom.className = 'cm-row-help'
-  if (help.icon) dom.append(iconSvg(help.icon.name, 'row-help-', help.icon.inscription))
-  const text = document.createElement('span')
-  help.doc.split('`').forEach((part, i) => {
-    if (i % 2 === 0) {
-      text.append(part)
-      return
-    }
-    const code = document.createElement('code')
-    code.textContent = part
-    text.append(code)
-  })
-  dom.append(text)
+  if (help.icon) {
+    dom.className = 'cm-row-icon'
+    dom.append(iconSvg(help.icon.name, 'row-help-', help.icon.inscription))
+  } else {
+    dom.className = 'cm-row-help'
+    dom.textContent = help.doc ?? ''
+  }
   return dom
 }
 
-/** Hovering a row's syntax explains it in the cheat sheet's words; an icon
- *  name shows the icon. */
+/** Hovering an icon's name in a row shows the icon; `red`, `*` and a
+ *  spacer say what they do. */
 export const rowHelp = [
   hoverTooltip((view, pos, side) => {
     const help = rowHelpAt(view.state, pos, side)
@@ -71,14 +65,8 @@ export const rowHelp = [
     return { pos: help.from, end: help.to, create: () => ({ dom: helpDom(help) }) }
   }),
   EditorView.baseTheme({
-    '.cm-row-help': {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      padding: '4px 8px',
-      maxWidth: '40em',
-    },
-    '.cm-row-help svg': { display: 'block', flexShrink: '0' },
-    '.cm-row-help code': { fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace" },
+    '.cm-row-icon': { padding: '4px' },
+    '.cm-row-icon svg': { display: 'block' },
+    '.cm-row-help': { padding: '3px 8px', maxWidth: '40em' },
   }),
 ]

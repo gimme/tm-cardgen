@@ -1,10 +1,19 @@
-// What a piece of a row means, for the editor's hover: the cheat sheet's
-// words on the form under the pointer, or the icon named there. Scans the
-// text the way richtext.ts tokenizes it, but never fails: a broken row
-// still explains what it can.
+// What a piece of a row means, for the editor's hover: an icon shows
+// itself, and the modifiers, the brackets, the breaks and the requirement's
+// max say what they do in a few words. Braces, operators, numbers, rules
+// text and plain words are silent, since they show what they are. Scans
+// the row as richtext.ts tokenizes it, but never fails: a broken row still
+// explains what it can.
 import { ICONS } from '../icons.ts'
 import { REQUIREMENT_SYNTAX } from './requirement.ts'
-import { inscribed, isOperator, matchParen, SPACER, type RichTextOptions } from './richtext.ts'
+import {
+  GAPPED_BREAK,
+  HALF_BREAK,
+  inscribed,
+  matchParen,
+  SPACER,
+  type RichTextOptions,
+} from './richtext.ts'
 import { ROW_SYNTAX } from './syntax.ts'
 import { VP_SYNTAX } from './vp.ts'
 
@@ -12,132 +21,152 @@ export interface Explanation {
   /** offsets within the row */
   from: number
   to: number
-  /** the cheat sheet's words, `code` in backticks */
-  doc: string
-  /** the icon named here, with the number written on it */
+  /** the icon named here, with the number written on it; or */
   icon?: { name: string; inscription?: string }
+  /** what the piece does, in a few words */
+  doc?: string
 }
 
 export interface ExplainOptions extends RichTextOptions {
-  /** what words outside braces are in this field; rows print them bold */
-  bare?: string
+  /** a leading `max` is a keyword (the requirement) */
+  max?: boolean
 }
 
 /** the fields written in the row language, and how each reads */
 export const ROW_FIELDS: Record<'body' | 'active' | 'requirement' | 'vp', ExplainOptions> = {
   body: {},
   active: {},
-  requirement: {
-    ...REQUIREMENT_SYNTAX,
-    bare: 'Text in the requirement bar; a leading `max` makes the requirement an upper limit',
-  },
-  vp: { ...VP_SYNTAX, bare: "The disc's numeral, printed large" },
+  requirement: { ...REQUIREMENT_SYNTAX, max: true },
+  vp: VP_SYNTAX,
 }
 
 /** The explanation for the pointer on the character at `at` in `row`,
- *  when it is on anything. */
+ *  when it is on a piece that has one. */
 export function explainAt(
   row: string,
   at: number,
   opts: ExplainOptions = {},
 ): Explanation | undefined {
   if (at < 0 || at >= row.length) return undefined
-  const stacks = opts.stacks ?? true
-  const rules = opts.rules ?? true
-  const ctx = contextAt(row, at, rules)
-  if (ctx.kind === 'rules') return { from: ctx.open, to: ctx.close + 1, doc: ROW_SYNTAX.rules.doc }
-  if (ctx.kind === 'braces') {
-    const inner = ctx.close ?? row.length
-    if (at === ctx.open || at === ctx.close) {
-      const words = row
-        .slice(ctx.open + 1, inner)
-        .split(/\s+/)
-        .filter(Boolean)
-      const doc = words.length > 1 ? ROW_SYNTAX.group.doc : ROW_SYNTAX.icon.doc
-      return { from: ctx.open, to: Math.min(inner + 1, row.length), doc }
-    }
-    const word = wordAt(row, at, ctx.open + 1, inner, '')
-    return word && { from: word.from, to: word.to, ...explainWord(word.text) }
+  const max = opts.max ? /^(\s*)max(?=\s)/.exec(row) : null
+  if (max && at >= max[1].length && at < max[0].length) {
+    return { from: max[1].length, to: max[0].length, doc: 'Makes the requirement an upper limit' }
   }
-  const ch = row[at]
-  if (stacks && (ch === '[' || ch === ']')) return { from: at, to: at + 1, doc: ROW_SYNTAX.box.doc }
-  if (stacks && (ch === '<' || ch === '>'))
-    return { from: at, to: at + 1, doc: ROW_SYNTAX.stack.doc }
-  const gap = gapAround(row, at)
-  if (gap) return { ...gap, doc: ROW_SYNTAX.gap.doc }
-  if (ch === '|') return { from: at, to: at + 1, doc: ROW_SYNTAX.line.doc }
-  if (/\s/.test(ch)) return undefined
-  const word = wordAt(row, at, 0, row.length, `{}|${stacks ? '[]<>' : ''}${rules ? '()' : ''}`)
-  return word && { from: word.from, to: word.to, doc: opts.bare ?? ROW_SYNTAX.words.doc }
+  const spot = spotAt(row, at, opts)
+  if (!spot) return undefined
+  switch (spot.kind) {
+    case 'braces': {
+      const word = wordAt(row, at, spot.from, spot.to)
+      if (!word) return undefined
+      const meaning = explainWord(word.text)
+      return meaning && { from: word.from, to: word.to, ...meaning }
+    }
+    case 'bracket':
+      return { from: at, to: at + 1, doc: spot.box ? ROW_SYNTAX.box.doc : ROW_SYNTAX.stack.doc }
+    case 'break':
+      return { from: spot.from, to: spot.to, doc: breakDoc(spot.gap) }
+  }
 }
 
-type Context =
-  | { kind: 'braces'; open: number; close?: number }
-  | { kind: 'rules'; open: number; close: number }
-  | { kind: 'top' }
+type Spot =
+  /** inside braces: the span between them */
+  | { kind: 'braces'; from: number; to: number }
+  /** on a production box's or a stack's bracket */
+  | { kind: 'bracket'; box: boolean }
+  /** on or in a break: | or |3mm| with its own gap */
+  | { kind: 'break'; from: number; to: number; gap?: number }
 
-/** The braces or rules text `at` sits in, scanning as the tokenizer does:
- *  braces run to the next `}`, rules text to its matching `)`, and an
- *  unclosed one to the end of the row. */
-function contextAt(row: string, at: number, rules: boolean): Context {
+/** What the tokenizer makes of the character at `at`, as far as the hover
+ *  cares: braces run to the next `}`, or to the end of the row when there
+ *  is none; rules text is skipped whole (braces in it are an error); a
+ *  break counts only where one is allowed. Nothing for anything else. */
+function spotAt(row: string, at: number, opts: RichTextOptions): Spot | undefined {
+  const stacks = opts.stacks ?? true
+  const rules = opts.rules ?? true
+  const lines = opts.lines ?? true
+  // how many boxes and stacks are open at `i`
+  let depth = 0
   let i = 0
   while (i <= at) {
     const ch = row[i]
     if (ch === '{') {
       const close = row.indexOf('}', i)
       const end = close === -1 ? row.length : close
-      if (at <= end) return { kind: 'braces', open: i, close: close === -1 ? undefined : close }
+      if (at <= end)
+        return at > i && at < end ? { kind: 'braces', from: i + 1, to: end } : undefined
       i = end + 1
     } else if (ch === '(' && rules) {
       const close = matchParen(row, i)
-      if (close === -1) return { kind: 'top' }
-      if (at <= close) return { kind: 'rules', open: i, close }
+      if (close === -1 || at <= close) return undefined
       i = close + 1
+    } else if (ch === '|') {
+      const rest = row.slice(i)
+      const gapped = GAPPED_BREAK.exec(rest)
+      const half = gapped ? null : HALF_BREAK.exec(rest)
+      const match = gapped ?? half
+      const end = match ? i + match[0].length : i + 1
+      if (at < end) {
+        // a half-written gap, or a break where the field is one line, is
+        // an error the linter explains
+        if (half || (!lines && depth === 0)) return undefined
+        const brk: Spot = { kind: 'break', from: i, to: end }
+        if (gapped) brk.gap = parseFloat(gapped[1])
+        return brk
+      }
+      i = end
+    } else if (stacks && (ch === '[' || ch === '<')) {
+      if (at === i) return { kind: 'bracket', box: ch === '[' }
+      depth++
+      i++
+    } else if (stacks && (ch === ']' || ch === '>')) {
+      if (at === i) return { kind: 'bracket', box: ch === ']' }
+      depth = Math.max(0, depth - 1)
+      i++
     } else i++
   }
-  return { kind: 'top' }
+  return undefined
 }
 
-/** the run of non-space characters around `at` within [lo, hi), stopping
- *  at any of `stops` */
+/** the run of non-space characters around `at` within [lo, hi) */
 function wordAt(
   row: string,
   at: number,
   lo: number,
   hi: number,
-  stops: string,
 ): { from: number; to: number; text: string } | undefined {
-  const boundary = (ch: string) => /\s/.test(ch) || stops.includes(ch)
-  if (boundary(row[at])) return undefined
+  const space = (ch: string) => /\s/.test(ch)
+  if (space(row[at])) return undefined
   let from = at
-  while (from > lo && !boundary(row[from - 1])) from--
+  while (from > lo && !space(row[from - 1])) from--
   let to = at + 1
-  while (to < hi && !boundary(row[to])) to++
+  while (to < hi && !space(row[to])) to++
   return { from, to, text: row.slice(from, to) }
 }
 
-/** a gapped break, |3mm|, with `at` anywhere in it */
-function gapAround(row: string, at: number): { from: number; to: number } | undefined {
-  const re = /\|\s*[+-]?(?:\d+\.?\d*|\.\d+)mm\s*\|/g
-  for (let m = re.exec(row); m; m = re.exec(row)) {
-    if (m.index <= at && at < m.index + m[0].length)
-      return { from: m.index, to: m.index + m[0].length }
-  }
-  return undefined
+/** what one word in braces is, when hovering it says anything */
+function explainWord(word: string): Pick<Explanation, 'doc' | 'icon'> | undefined {
+  if (word === 'red') return { doc: 'Draws the any-player ring around the icon after it' }
+  const spacer = SPACER.exec(word)
+  if (spacer) return { doc: spacerDoc(parseFloat(spacer[1])) }
+  const coin = inscribed(word)
+  if (coin) return { icon: { name: coin.name, inscription: coin.count } }
+  if (!Object.hasOwn(ICONS, word)) return undefined
+  if (ICONS[word].note)
+    return { doc: 'Attaches the see-rules asterisk to the icon or text before it' }
+  return { icon: { name: word } }
 }
 
-/** what one word inside braces is */
-function explainWord(word: string): Pick<Explanation, 'doc' | 'icon'> {
-  if (word === 'red') return { doc: ROW_SYNTAX.red.doc }
-  if (isOperator(word)) return { doc: ROW_SYNTAX.operator.doc }
-  if (SPACER.test(word)) return { doc: ROW_SYNTAX.spacer.doc }
-  const coin = inscribed(word)
-  if (coin) {
-    return { doc: ROW_SYNTAX.coin.doc, icon: { name: coin.name, inscription: coin.count } }
-  }
-  const def = Object.hasOwn(ICONS, word) ? ICONS[word] : undefined
-  if (!def) return { doc: ROW_SYNTAX.big.doc }
-  if (def.note) return { doc: ROW_SYNTAX.note.doc }
-  if (word === '->') return { doc: ROW_SYNTAX.arrow.doc, icon: { name: word } }
-  return { doc: def.inscribed ? ROW_SYNTAX.coin.doc : `\`${word}\``, icon: { name: word } }
+/** what a {3mm} spacer does to its neighbours */
+function spacerDoc(mm: number): string {
+  return mm < 0
+    ? `A spacer: its neighbours overlap by ${-mm} mm`
+    : `A spacer: ${mm} mm between its neighbours`
+}
+
+/** what a break does: a bare |, or |3mm| with its own gap */
+function breakDoc(gap?: number): string {
+  if (gap === undefined) return 'A line break'
+  return gap < 0
+    ? `A line break: the lines overlap by ${-gap} mm`
+    : `A line break: ${gap} mm between the lines`
 }

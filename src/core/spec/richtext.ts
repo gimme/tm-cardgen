@@ -106,9 +106,9 @@ export interface RichTextOptions {
 }
 
 /** a gapped break: `|3mm|`, spaces allowed inside */
-const GAPPED_BREAK = /^\|\s*([+-]?(?:\d+\.?\d*|\.\d+))mm\s*\|/
+export const GAPPED_BREAK = /^\|\s*([+-]?(?:\d+\.?\d*|\.\d+))mm\s*\|/
 /** the same without its closing pipe, `|3mm`: reported with a hint */
-const HALF_BREAK = /^\|\s*([+-]?(?:\d+\.?\d*|\.\d+))mm(?=\s|$)/
+export const HALF_BREAK = /^\|\s*([+-]?(?:\d+\.?\d*|\.\d+))mm(?=\s|$)/
 
 /** Tokenize a row. Never throws; errors carry offsets, items are best effort. */
 export function parseRichText(src: string, opts: RichTextOptions = {}): RichTextResult {

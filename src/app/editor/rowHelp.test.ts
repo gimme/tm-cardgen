@@ -1,7 +1,6 @@
 import { yaml } from '@codemirror/lang-yaml'
 import { EditorState } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
-import { ROW_SYNTAX } from '../../core/index.ts'
 import { rowHelpAt } from './rowHelp.ts'
 
 /** The help for hovering at the ‸ in `doc`, with the pointer on the side it marks: after it by default. */
@@ -16,11 +15,11 @@ describe('rowHelpAt', () => {
     expect(hover('body:\n  - "{pl‸ant} {->}"')).toEqual({
       from: 12,
       to: 17,
-      doc: '`plant`',
       icon: { name: 'plant' },
     })
-    expect(hover('body:\n  - "{plant} {-‸>}"')?.doc).toBe(ROW_SYNTAX.arrow.doc)
-    expect(hover('body:\n  - "[{plant}] (Gain a p‸lant.)"')?.doc).toBe(ROW_SYNTAX.rules.doc)
+    expect(hover('body:\n  - "{plant} {-‸>}"')?.icon).toEqual({ name: '->' })
+    expect(hover('body:\n  - "{r‸ed plant}"')?.doc).toMatch(/any-player/)
+    expect(hover('body:\n  - "[{plant}] (Gain a p‸lant.)"')).toBeUndefined()
   })
 
   it('reads the row as written: quoted either way, plain, or one string', () => {
@@ -34,13 +33,15 @@ describe('rowHelpAt', () => {
   it('reads the requirement and the disc by their own rules', () => {
     expect(hover('requirement: "max 6% {oxy‸gen}"')?.icon).toEqual({ name: 'oxygen' })
     expect(hover('requirement: "m‸ax 6% {oxygen}"')?.doc).toMatch(/upper limit/)
+    expect(hover('requirement: "(x {oxy‸gen}"')?.icon).toEqual({ name: 'oxygen' })
+    expect(hover('body: "(x {oxy‸gen}"')).toBeUndefined()
     expect(hover('vp: 1 {/ 2 mic‸robe}')?.icon).toEqual({ name: 'microbe' })
-    expect(hover('vp: ‸1 {/ 2 microbe}')?.doc).toMatch(/numeral/)
   })
 
   it('takes the character before the boundary when the pointer is there', () => {
     expect(hover('body:\n  - "{plant‸} {steel}"', -1)?.icon).toEqual({ name: 'plant' })
-    expect(hover('body:\n  - "{plant‸} {steel}"', 1)?.doc).toBe(ROW_SYNTAX.icon.doc)
+    expect(hover('body:\n  - "{plant‸} {steel}"', 1)).toBeUndefined()
+    expect(hover('body:\n  - "{‸plant} {steel}"', -1)).toBeUndefined()
   })
 
   it('knows the row fields only where they belong', () => {
