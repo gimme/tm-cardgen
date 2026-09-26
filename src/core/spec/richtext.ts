@@ -1,18 +1,8 @@
 // Tokenizer for the row language of body and active rows, the requirement
-// and the VP disc. Forms:
-//   {...}   one element: icons by lowercase name and -> the arrow; a number
-//           glued to an inscribed icon (25mc); a lone + - = : / is an
-//           operator; Nmm is a spacer; anything else is text at the count
-//           size. Modifiers mark one neighbour and never reach past the
-//           braces: `red` halos the icon right after it, * the asterisk
-//           hangs off the element right before it
-//   [...]   production box: lines of items, each line a row
-//   <...>   stack: the same lines, unpainted
-//   |       line break; |Nmm| a break with its own gap
-//   (...)   rules text, kept verbatim with its parentheses
-//   words   anything outside brackets is directive text
-// Lowercase words are reserved for icon names, `red` and the mm unit. There
-// are no escapes: brackets are structure wherever they stand.
+// and the VP disc; syntax.ts lists its forms. Modifiers mark one neighbour
+// and never reach past their braces. Lowercase words are reserved for icon
+// names, `red` and the mm unit. There are no escapes: brackets are
+// structure wherever they stand.
 import { ICON_NAMES, ICONS, suggest } from '../icons.ts'
 
 /** Source offset of the braces the item was written in; the layout sets

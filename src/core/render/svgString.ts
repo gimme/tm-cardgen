@@ -51,7 +51,7 @@ function esc(s: string): string {
 }
 
 /** The card's `<defs>` and drawing elements, without the outer `<svg>`. */
-export function renderSvgMarkup(layout: CardLayout, opts: RenderOptions): string {
+export function renderSvgMarkup(layout: Pick<CardLayout, 'nodes'>, opts: RenderOptions): string {
   const p = opts.idPrefix ?? ''
   const defs: string[] = []
   const body: string[] = []

@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EditorView } from '@codemirror/view'
 import { makeEditorState } from '../../editor/cmSetup.ts'
 import { useStore } from '../../store/useStore.ts'
+import { SyntaxSheet } from './SyntaxSheet.tsx'
 
 export function EditorPane() {
   const currentId = useStore((s) => s.currentId)
@@ -10,6 +11,7 @@ export function EditorPane() {
   const saveState = useStore((s) => s.saveState)
   const stale = useStore((s) => s.stale)
   const hostRef = useRef<HTMLDivElement>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   useEffect(() => {
     if (!hostRef.current || currentId === undefined) return
@@ -28,7 +30,16 @@ export function EditorPane() {
   return (
     <section className="editor-pane">
       <div ref={hostRef} className="editor-host" />
+      {sheetOpen && <SyntaxSheet />}
       <footer className="editor-status">
+        <button
+          type="button"
+          className={sheetOpen ? 'active' : ''}
+          onClick={() => setSheetOpen((open) => !open)}
+          title="The row syntax, and every icon by name"
+        >
+          Syntax
+        </button>
         <span className={saveState === 'error' ? 'status-error' : ''}>
           {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving…' : 'Save failed'}
         </span>

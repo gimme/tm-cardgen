@@ -3,7 +3,7 @@
 import { HALO } from '../frame/halo.ts'
 import { COLON, SLASH, slashWidth } from '../frame/operators.ts'
 import type { Pt } from '../frame/paths.ts'
-import { ICONS } from '../icons.ts'
+import { ICONS, type IconDef } from '../icons.ts'
 import type { IconToken, Operator, RichTextItem, Stack } from '../spec/richtext.ts'
 import type { Requirement, Row } from '../spec/types.ts'
 import { COMMON, PROD_BOX } from './frames.ts'
@@ -66,6 +66,22 @@ const boxStyle = (scale: number): ElementStyle => ({
   lineGap: PROD_BOX.lineGap * scale,
 })
 const RULES_INK = '#111'
+
+// ---- icons ---------------------------------------------------------------
+/** the icon's own drawing: its vector markup, or its image */
+function iconNode(def: IconDef, x: number, y: number, w: number, h: number): LayoutNode {
+  return def.vector
+    ? { kind: 'vector', icon: def.vector, x, y, w, h }
+    : { kind: 'image', asset: { type: 'asset', path: def.file }, x, y, w, h }
+}
+
+/** A registered icon by itself at its body height, for showing it off. */
+export function iconSample(name: string): Chunk {
+  const def = ICONS[name]
+  const h = def.h
+  const w = h * def.aspect
+  return { w, h, nodes: [iconNode(def, 0, 0, w, h)] }
+}
 
 // ---- chunk machinery -----------------------------------------------------
 /** A measured block of primitives with (0,0) at its top-left. */
@@ -262,11 +278,7 @@ export class Engine {
       ix = iy = counted
       nodes.push({ kind: 'halo', shape: def.halo, x: ix, y: iy, w, h, scale })
     }
-    nodes.push(
-      def.vector
-        ? { kind: 'vector', icon: def.vector, x: ix, y: iy, w, h }
-        : { kind: 'image', asset: { type: 'asset', path: def.file }, x: ix, y: iy, w, h },
-    )
+    nodes.push(iconNode(def, ix, iy, w, h))
     if (item.inscription !== undefined) {
       // the inscription's em and baseline as fractions of the coin's height
       const size = h * 0.565

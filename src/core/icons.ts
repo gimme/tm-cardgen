@@ -135,6 +135,8 @@ export const ICONS: Record<string, IconDef> = {
   '*': { vector: 'asterisk', aspect: STAR.w / STAR.h, h: STAR.h, note: true },
 }
 
+// the official tags, the base game's first, then the fan-made ones
+// alphabetically
 const TAG_NAMES = [
   'building',
   'space',
@@ -148,14 +150,14 @@ const TAG_NAMES = [
   'animal',
   'event',
   'venus',
+  'wild',
+  'multi',
+  'galactic',
+  'infrastructure',
   'mars',
   'moon',
-  'wild',
-  'galactic',
   'planetary',
-  'infrastructure',
   'radioactive',
-  'multi',
 ] as const
 
 export const KNOWN_TAGS: readonly string[] = TAG_NAMES
