@@ -25,6 +25,14 @@ interface CardOptions {
   name?: string
 }
 
+/** the image types the preview's reference picker lists */
+const IMAGE_TYPES: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+}
+
 type Steps = (...helpers: unknown[]) => Promise<void>
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor as new (
   ...params: string[]
@@ -66,6 +74,19 @@ try {
     return file
   }
 
+  /** an SVG root's viewBox and size, for `region` of the card at `scale` */
+  const frame = ({ region, scale }: CardOptions): string => {
+    const { x, y, w, h } = region ?? { x: 0, y: 0, w: CARD_W, h: CARD_H }
+    const s = scale ?? 1000 / Math.max(w, h)
+    return `viewBox="${x} ${y} ${w} ${h}" width="${Math.round(w * s)}" height="${Math.round(h * s)}"`
+  }
+
+  /** a standalone SVG, screenshot to `file` */
+  const snap = async (svg: string, file: string): Promise<void> => {
+    await cardPage.setContent(`<body style="margin:0">${svg}</body>`)
+    await cardPage.locator('body > svg').screenshot({ path: file })
+  }
+
   let cards = 0
   /** a spec, rendered from the SVG the PNG export draws, at any scale */
   const card = async (yaml: string, opts: CardOptions = {}): Promise<string> => {
@@ -76,26 +97,41 @@ try {
       },
       { module: `${base}src/app/export/exportCommon.ts`, yaml },
     )
-    const { x, y, w, h } = opts.region ?? { x: 0, y: 0, w: CARD_W, h: CARD_H }
-    const scale = opts.scale ?? 1000 / Math.max(w, h)
     const framed = svg.replace(
       /^<svg ([^>]*)viewBox="[^"]*" width="[^"]*" height="[^"]*"/,
-      `<svg $1viewBox="${x} ${y} ${w} ${h}" width="${Math.round(w * scale)}" height="${Math.round(h * scale)}"`,
+      `<svg $1${frame(opts)}`,
     )
     if (framed === svg)
       throw new Error("exportSvg()'s root tag changed shape: update card() in look.ts")
     const file = path.join(outDir, opts.name ?? `card-${++cards}.png`)
-    await cardPage.setContent(`<body style="margin:0">${framed}</body>`)
-    await cardPage.locator('body > svg').screenshot({ path: file })
+    await snap(framed, file)
     console.log(`card: ${file}`)
+    return file
+  }
+
+  let refs = 0
+  /** an official render in reference/, stretched onto the card box as the preview's picker does */
+  const ref = async (image: string, opts: CardOptions = {}): Promise<string> => {
+    const type = IMAGE_TYPES[path.extname(image).toLowerCase()]
+    if (!type) throw new Error(`not an image type the reference picker lists: ${image}`)
+    const data = fs.readFileSync(path.join(root, 'reference', image)).toString('base64')
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" ${frame(opts)}>` +
+      `<image href="data:${type};base64,${data}" width="${CARD_W}" height="${CARD_H}" preserveAspectRatio="none"/></svg>`
+    const file = path.join(outDir, opts.name ?? `ref-${++refs}.png`)
+    await snap(svg, file)
+    console.log(`ref: ${file}`)
     return file
   }
 
   const read = (file: string): string => fs.readFileSync(file, 'utf8')
 
   await page.goto(url)
-  await page.waitForSelector('.app-shell')
-  await new AsyncFunction('page', 'shot', 'card', 'read', steps)(page, shot, card, read)
+  // the app shows .app-loading until startup ends in .app-shell or a failure
+  await page.waitForSelector('.app-shell, .app-loading:has-text("Failed to start")')
+  const failed = page.locator('.app-loading')
+  if (await failed.count()) throw new Error(await failed.innerText())
+  await new AsyncFunction('page', 'shot', 'card', 'ref', 'read', steps)(page, shot, card, ref, read)
 } finally {
   console.log(errors.length ? `page errors:\n${errors.join('\n')}` : 'no page errors')
   await browser.close()

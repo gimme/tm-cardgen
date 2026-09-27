@@ -1,6 +1,6 @@
 ---
 name: look
-description: Look at the app or a card's rendered output in headless Chromium, to check a UI or rendering change by eye. Screenshots the app after Playwright steps, and renders a card spec from the SVG the PNG export draws, at any scale, whole or cropped to a region in mm.
+description: Look at the app or a rendered card in headless Chromium, to check a UI or rendering change by eye, or to compare a card with its official render in reference/.
 ---
 
 # Look
@@ -20,6 +20,7 @@ The steps are the body of an async function with:
 - `page`: Playwright's page, 1400 × 900 at device scale 2.
 - `shot(selector?, name?)`: the page, or the first element matching `selector`.
 - `card(yaml, { region?, scale?, name? })`: the spec, rendered from the SVG that the PNG export draws at 300 or 600 dpi, but at any scale. `region` is `{ x, y, w, h }` in mm from the card's top-left corner (the card is 63 × 88). `scale` is px per mm; by default the long side comes out at 1000 px.
+- `ref(file, { region?, scale?, name? })`: an official render from `reference/`, stretched onto the card box as the preview's reference picker draws it. With the same `region` and `scale`, it comes out pixel for pixel over the same mm as `card()`, so the two compare side by side.
 - `read(path)`: a file's text.
 
-Without an out-dir, images go to a fresh temp dir. Names default to `shot-N.png` and `card-N.png`.
+Without an out-dir, images go to a fresh temp dir. Names default to `shot-N.png`, `card-N.png` and `ref-N.png`.
