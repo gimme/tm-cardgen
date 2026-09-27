@@ -17,6 +17,10 @@ Deviations from upstream:
 
 - `fonts/OpenSans-SemiBold.ttf` — added: the directive text face (Open
   Sans, SIL Open Font License 1.1, `fonts/OpenSans-LICENSE.txt`).
+- `fonts/Caveat-subset.woff2` — added, and not a card face: the handwritten
+  first-run hint in the editor (Caveat, SIL Open Font License 1.1,
+  `fonts/Caveat-OFL.txt`). Google Fonts' `Caveat[wght].ttf` instanced at
+  weight 400 and cut down to printable ASCII with hb-subset.
 - `tags/city.png`, `tiles/city.png` — RGB scaled ×0.82 (upstream is nearly
   white; printed cards are gray).
 - `production.png` — production-box texture from the open-source

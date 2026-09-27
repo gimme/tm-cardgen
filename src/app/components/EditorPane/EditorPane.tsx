@@ -58,17 +58,12 @@ export function EditorPane() {
     <section className="editor-pane">
       <div className="editor-body">
         <div ref={hostRef} className="editor-host" />
-        {hint && <SheetHint />}
       </div>
       {sheetOpen && <SyntaxSheet />}
       <footer className="editor-status">
-        <button
-          type="button"
-          className={sheetOpen ? 'active' : ''}
-          onClick={toggleSheet}
-          title="The card text syntax, and every icon by name"
-        >
+        <button type="button" className={sheetOpen ? 'active' : ''} onClick={toggleSheet}>
           Syntax &amp; icons
+          {hint && <SheetHint />}
         </button>
         <span className="status-spacer" />
         {errors > 0 && (
@@ -114,22 +109,29 @@ function SaveState({ state }: { state: 'saved' | 'saving' | 'error' }) {
   )
 }
 
-/** A first-run nudge towards the cheat sheet, floating over the editor's
- *  corner with a hand-drawn arrow at the button; gone once it is opened. */
+/** A first-run nudge towards the cheat sheet: a handwritten note over the
+ *  editor's corner, with an arrow from under it down to the button. It lives
+ *  inside the button so the arrow lands on the button's center whatever the
+ *  system font makes of the label; gone once the sheet is opened. */
 function SheetHint() {
   return (
-    <div className="sheet-hint" aria-hidden="true">
-      <svg viewBox="0 0 40 56" width="40" height="56">
+    <span className="sheet-hint" aria-hidden="true">
+      <span className="sheet-hint-text">
+        see how card text is written
+        <br />
+        and what icons you can use
+      </span>
+      {/* the tail starts under the note's center at x=98 and the head ends at x=20 */}
+      <svg viewBox="0 0 125 80" width="125" height="80">
         <path
-          d="M37 4 C20 2 28 20 16 28 C6 35 7 43 9 51 M2 44 C4 48 7 50 9 51 C11 49 14 45 15 42"
+          d="M98 10 C80 5 88 28 69 40 C48 54 28 55 20 68 M18 55 C19.5 60 19.5 64 20 68 C23 66 27.5 64 32 63"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeWidth="1.75"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
-      <span>how card text is written, and every icon by name</span>
-    </div>
+    </span>
   )
 }

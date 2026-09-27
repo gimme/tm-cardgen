@@ -13,6 +13,15 @@
   --hairline: rgb(255 255 255 / 0.07);
 }
 
+/* the editor's first-run hint is handwritten; the file is a printable-ASCII
+   subset of Caveat, see public/assets/README.md */
+@font-face {
+  font-family: Caveat;
+  src: url('/assets/fonts/Caveat-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-display: block;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -172,9 +181,7 @@ button {
   border-right: 1px solid var(--border);
 }
 
-/* the editor, and the first-run hint floating over it */
 .editor-body {
-  position: relative;
   flex: 1;
   min-height: 0;
 }
@@ -184,25 +191,35 @@ button {
   overflow: hidden;
 }
 
-/* the first-run hint: over the editor's bottom-left corner, its arrow
-   ending just above the Icons & syntax button */
+/* the first-run hint: anchored to the Syntax & icons button, its arrow
+   rising from just above the button's center to a handwritten note over
+   the editor's corner. The note is centered on the arrow's tail. */
 .sheet-hint {
   position: absolute;
-  left: 14px;
-  bottom: 6px;
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
+  left: 50%;
+  bottom: 100%;
+  /* the arrow's head is 20px into the drawing */
+  margin-left: -20px;
   pointer-events: none;
   color: var(--muted);
-  font-style: italic;
-  font-size: 13px;
   opacity: 0.85;
 }
 
 .sheet-hint svg {
   display: block;
-  flex-shrink: 0;
+}
+
+.sheet-hint-text {
+  position: absolute;
+  bottom: calc(100% - 5px);
+  /* the arrow's tail is 98px into the drawing */
+  left: 98px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  text-align: center;
+  font:
+    20px/1.1 Caveat,
+    cursive;
 }
 
 .editor-host .cm-editor {
@@ -220,6 +237,7 @@ button {
 }
 
 .editor-status button {
+  position: relative;
   padding: 0 6px;
   margin-left: -6px;
   border-radius: 4px;
