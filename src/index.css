@@ -413,17 +413,17 @@ button {
   padding: 16px;
 }
 
+/* the card fits the box both ways: the full width, unless the height runs
+   out first */
 .preview-fit {
   display: grid;
   place-items: center;
   overflow: hidden;
+  container-type: size;
 }
 
 .preview-fit .preview-card {
-  height: 100%;
-  max-height: 100%;
-  aspect-ratio: 63 / 88;
-  max-width: 100%;
+  width: min(100cqw, 100cqh * 63 / 88);
 }
 
 .preview-card {
@@ -437,13 +437,6 @@ button {
   height: auto;
   /* the corner radius is the card's own, set inline by CardSvg */
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
-}
-
-.preview-fit .preview-card svg {
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-  margin: 0 auto;
 }
 
 .preview-stale svg {
