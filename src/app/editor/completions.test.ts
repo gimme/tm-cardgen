@@ -1,15 +1,20 @@
 import { CompletionContext } from '@codemirror/autocomplete'
 import { EditorState } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
+import { TOP_LEVEL_FIELDS } from '../../core/index.ts'
 import { cardCompletions } from './completions.ts'
 
 const ART_FILES = ['123', 'a #1.png', 'a,b.png', 'a: b.png', 'blå himmel.png', 'dust.png', 'true']
 
-/** Completions for a document whose cursor sits at the end of `doc`. */
-function completeAtEnd(doc: string) {
-  const state = EditorState.create({ doc })
-  return cardCompletions(new CompletionContext(state, doc.length, false), ART_FILES)
+/** Completions for a document with its cursor at the ^ in `doc`. */
+function completeAt(doc: string) {
+  const at = doc.indexOf('^')
+  const state = EditorState.create({ doc: doc.replace('^', '') })
+  return cardCompletions(new CompletionContext(state, at, false), ART_FILES)
 }
+
+/** Completions for a document whose cursor sits at the end of `doc`. */
+const completeAtEnd = (doc: string) => completeAt(`${doc}^`)
 
 /** What the document becomes once `label` is picked. */
 function applied(doc: string, label: string): string {
@@ -138,8 +143,35 @@ describe('cardCompletions', () => {
     expect(applied("art: { file: 'du", 'dust.png')).toBe("art: { file: 'dust.png")
   })
 
+  it("offers art's keys minus those written anywhere in its map", () => {
+    const labels = (doc: string) => completeAt(doc)?.options.map((o) => o.label)
+    expect(labels('art: { file: a.png, ^')).toEqual(['zoom', 'offset'])
+    expect(labels('art: { ^, zoom: 1 }')).toEqual(['file', 'offset'])
+    expect(labels('art:\n  file: a.png\n  ^')).toEqual(['zoom', 'offset'])
+    expect(labels('art:\n  ^\n  zoom: 1.5\nflavor: x')).toEqual(['file', 'offset'])
+    // neither a file name nor an offset holds a key
+    expect(labels('art: { file: "a: b.png", offset: [0, 1], ^')).toEqual(['zoom'])
+  })
+
   it('completes top-level keys with their colon and space', () => {
     expect(applied('fla', 'flavor')).toBe('flavor: ')
     expect(applied('act', 'active')).toBe('active: ')
+  })
+
+  it("offers the top-level keys in the spec's order, minus those written on other lines", () => {
+    const labels = (doc: string) => completeAt(doc)?.options.map((o) => o.label)
+    const keys = Object.keys(TOP_LEVEL_FIELDS)
+    const except = (...written: string[]) => keys.filter((k) => !written.includes(k))
+    expect(labels('^')).toEqual(keys)
+    // the list sorts by score, so each key's boost steps down from the one before
+    const boosts = completeAt('^')!.options.map((o) => o.boost!)
+    expect(boosts.every((b, i) => i === 0 || b < boosts[i - 1])).toBe(true)
+    expect(labels('name: x\ncost: 3\n^')).toEqual(except('name', 'cost'))
+    // below the cursor too; the line being written does not count
+    expect(labels('name: x\n^\nvp: 1')).toEqual(except('name', 'vp'))
+    expect(labels('name: x\nco^')).toEqual(except('name'))
+    // an indented key is not a top-level one
+    expect(labels('art:\n  file: a.png\n^')).toEqual(except('art'))
+    expect(completeAt('name: x\n  ^')).toBeNull()
   })
 })

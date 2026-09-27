@@ -1,4 +1,5 @@
 import type { CompletionContext, CompletionResult, Completion } from '@codemirror/autocomplete'
+import type { Text } from '@codemirror/state'
 import {
   ART_FIELDS,
   gluedWords,
@@ -42,13 +43,31 @@ const BRACE_WORDS: Completion[] = [
 ]
 const ACTIVE_WORDS: Completion[] = [...BRACE_WORDS, { ...iconWord('->'), ...SYMBOL }]
 
+/** The keys of a map as completions, each applied with its colon and space:
+ *  the ones not yet `written`, in the spec's order rather than the alphabet's,
+ *  so that the list opened on nothing typed reads like a card. A typed prefix
+ *  still ranks by its match. */
+function keyOptions(fields: Record<string, { doc: string }>, written: Set<string>): Completion[] {
+  return Object.entries(fields)
+    .map(([key, meta], i): Completion => ({
+      label: key,
+      apply: `${key}: `,
+      type: 'property',
+      info: meta.doc,
+      boost: -i,
+    }))
+    .filter((c) => !written.has(c.label))
+}
+
 export function cardCompletions(
   context: CompletionContext,
   artFiles: string[],
 ): CompletionResult | null {
   const line = context.state.doc.lineAt(context.pos)
   const before = context.state.sliceDoc(line.from, context.pos)
-  const top = topLevelKeyAt(context, line.from)
+  const entries = topLevelEntries(context.state.doc)
+  // the key whose value the line sits in: the last one at or above it
+  const top = entries.findLast((e) => e.from <= line.from)
 
   // art: its file names as the whole value or the map's file, its own keys inside
   // its { } or indented under it; its braces hold no icons
@@ -72,13 +91,14 @@ export function cardCompletions(
     }
     const word = /[,{\n]\s*([a-zA-Z]*)$/.exec(written)
     if (!word) return null
-    const options: Completion[] = Object.entries(ART_FIELDS).map(([key, meta]) => ({
-      label: key,
-      apply: `${key}: `,
-      type: 'property',
-      info: meta.doc,
-    }))
-    return { from: context.pos - word[1].length, options, validFor: /^[a-zA-Z]*$/ }
+    // the keys written anywhere in art's value, below the cursor too
+    const value = context.state.sliceDoc(top.from + 'art:'.length, top.to)
+    const keys = new Set(Array.from(value.matchAll(/[,{\n]\s*([a-zA-Z]+):/g), (m) => m[1]))
+    return {
+      from: context.pos - word[1].length,
+      options: keyOptions(ART_FIELDS, keys),
+      validFor: /^[a-zA-Z]*$/,
+    }
   }
 
   // a word inside { }, after any text or icon: {3 pla… {OR STEAL red m…
@@ -117,31 +137,33 @@ export function cardCompletions(
     }
   }
 
-  // top-level keys at column 0
+  // a top-level key at column 0: the ones not written on other lines
   const topKey = /^([a-zA-Z]*)$/.exec(before)
   if (topKey) {
-    const options: Completion[] = Object.entries(TOP_LEVEL_FIELDS).map(([key, meta]) => ({
-      label: key,
-      apply: `${key}: `,
-      type: 'property',
-      info: meta.doc,
-    }))
-    return { from: line.from, options, validFor: /^[a-zA-Z]*$/ }
+    const keys = new Set(entries.filter((e) => e.from !== line.from).map((e) => e.key))
+    return { from: line.from, options: keyOptions(TOP_LEVEL_FIELDS, keys), validFor: /^[a-zA-Z]*$/ }
   }
 
   return null
 }
 
-/** The top-level key whose value the line at `lineFrom` sits in, and where that key's line starts. */
-function topLevelKeyAt(
-  context: CompletionContext,
-  lineFrom: number,
-): { key: string; from: number } | undefined {
-  const doc = context.state.doc
-  for (let lineNo = doc.lineAt(lineFrom).number; lineNo >= 1; lineNo--) {
+/** A top-level key as written, with the span of its line and the lines
+ *  under it, up to the next key's line. */
+interface TopLevelEntry {
+  key: string
+  from: number
+  to: number
+}
+
+/** The document's top-level keys, in order. */
+function topLevelEntries(doc: Text): TopLevelEntry[] {
+  const entries: TopLevelEntry[] = []
+  for (let lineNo = 1; lineNo <= doc.lines; lineNo++) {
     const line = doc.line(lineNo)
     const m = /^([a-zA-Z]+):/.exec(line.text)
-    if (m) return { key: m[1], from: line.from }
+    if (!m) continue
+    if (entries.length > 0) entries[entries.length - 1].to = line.from
+    entries.push({ key: m[1], from: line.from, to: doc.length })
   }
-  return undefined
+  return entries
 }

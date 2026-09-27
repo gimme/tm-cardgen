@@ -7,6 +7,7 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import { EditorView, keymap } from '@codemirror/view'
 import { basicSetup } from 'codemirror'
 import { getServices } from '../store/services.ts'
+import { blankLineCompletion } from './blankLineCompletion.ts'
 import { optionIcons, optionIconTheme } from './completionIcons.ts'
 import { cardCompletions } from './completions.ts'
 import { continueList, openRows } from './continueList.ts'
@@ -50,6 +51,7 @@ export function makeEditorState(text: string, onChange: (text: string) => void):
         addToOptions: [optionIcons],
       }),
       optionIconTheme,
+      blankLineCompletion,
       EditorView.updateListener.of((update) => {
         if (update.docChanged) onChange(update.state.doc.toString())
       }),
