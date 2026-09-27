@@ -38,6 +38,16 @@ export function makeEditorState(text: string, onChange: (text: string) => void):
       yamlLanguage.data.of({
         closeBrackets: { brackets: ['(', '[', '{', "'", '"', '<'], before: ')]}:;>"\'' },
       }),
+      // One Dark paints the chosen completion darker than the list around it,
+      // so with few rows the others look like the lit one; its reference theme
+      // fills a chosen list row blue with white text. Placed ahead of oneDark:
+      // of two themes styling one thing, the earlier wins
+      EditorView.theme({
+        '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
+          backgroundColor: '#4d78cc',
+          color: 'white',
+        },
+      }),
       oneDark,
       cardLinter,
       lintGutter(),
