@@ -39,8 +39,6 @@ export interface CardSpec {
   number?: string
   art?: ArtSpec
   artist?: string
-  /** crystal texture seed; omitted, it derives from the card name */
-  seed?: number
 }
 
 export interface Diagnostic {

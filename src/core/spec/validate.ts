@@ -36,7 +36,6 @@ export const TOP_LEVEL_FIELDS = {
   number: { doc: 'Card number (bottom-right box); an integer is padded to 3 digits' },
   art: { doc: 'Art file name, or {file, zoom, offset}' },
   artist: { doc: 'Artist credit, printed up the right edge of the art' },
-  seed: { doc: "Reroll the frame's crystal texture (any integer)" },
 } satisfies Record<string, { doc: string }>
 
 /** The keys of art's map form, with the same one-line help. */
@@ -364,12 +363,6 @@ export function validateCard(doc: Document, source: string): ValidateResult {
       case 'artist': {
         const s = asStringScalar(ctx, value, 'artist')
         if (s) spec.artist = String(s.value)
-        break
-      }
-      case 'seed': {
-        if (isScalar(value) && typeof value.value === 'number' && Number.isInteger(value.value)) {
-          spec.seed = value.value
-        } else ctx.error(value ?? root, 'seed must be an integer')
         break
       }
     }

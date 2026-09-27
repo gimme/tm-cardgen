@@ -110,8 +110,8 @@ export interface FrameNode {
   artTop?: number
   /** banner seam x, placed per card around the requirement bar and tags */
   seamX?: number
-  /** crystal texture seed: spec.seed, or derived from the card name */
-  seed?: number
+  /** crystal texture seed, derived from the card name */
+  seed: number
 }
 
 export type LayoutNode =

@@ -287,7 +287,7 @@ export function layoutCard(spec: CardSpec, ctx: LayoutContext): CardLayout {
   const backing = placeBacking(spec, artWin, ctx)
   const nodes: LayoutNode[] = [
     ...backgroundNodes(backing, artWin, engine),
-    ...frameNodes(color, regions, seamX, spec.seed ?? nameSeed(spec.name)),
+    ...frameNodes(color, regions, seamX, nameSeed(spec.name)),
     ...req.nodes,
     ...costNodes(spec, m),
     ...tagNodes(spec, engine),

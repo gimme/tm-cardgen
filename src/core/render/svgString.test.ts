@@ -10,7 +10,7 @@ const layout: CardLayout = {
   warnings: [],
   frame: { color: 'green', regions: frameRegions('green', 26.7) },
   nodes: [
-    { kind: 'frame', color: 'green', artBottom: 53.23, seamX: 28.6 },
+    { kind: 'frame', color: 'green', artBottom: 53.23, seamX: 28.6, seed: 0 },
     { kind: 'reqbox', w: 20, max: false },
     { kind: 'backdrop', x: 5, y: 15, w: 53, h: 38 },
     {
