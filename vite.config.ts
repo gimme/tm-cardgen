@@ -36,7 +36,10 @@ export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
   plugins: [react(), referenceListing()],
   test: {
+    // core and most of the app test in plain node; a file that mounts the
+    // editor says `@vitest-environment jsdom` at its top
     environment: 'node',
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
+    setupFiles: ['tests/setup.ts'],
   },
 })
