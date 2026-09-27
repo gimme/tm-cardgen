@@ -23,5 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Official card renders for the preview's comparison picker (local only)
-reference/
+# Official card renders
+reference/*
+!reference/README.md
