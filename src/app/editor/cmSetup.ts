@@ -19,6 +19,8 @@ export function makeEditorState(text: string, onChange: (text: string) => void):
   return EditorState.create({
     doc: text,
     extensions: [
+      // the list of keys that comes up on a blank line, and Enter's way past it
+      blankLineCompletion,
       keymap.of([
         // basicSetup only binds Ctrl-Shift-Z for redo on platforms it sniffs as Linux
         { key: 'Mod-Shift-z', run: redo, preventDefault: true },
@@ -51,7 +53,6 @@ export function makeEditorState(text: string, onChange: (text: string) => void):
         addToOptions: [optionIcons],
       }),
       optionIconTheme,
-      blankLineCompletion,
       EditorView.updateListener.of((update) => {
         if (update.docChanged) onChange(update.state.doc.toString())
       }),
