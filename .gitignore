@@ -26,3 +26,7 @@ dist-ssr
 # Official card renders
 reference/*
 !reference/README.md
+
+# Personal Claude Code instructions and settings
+CLAUDE.local.md
+.claude/settings.local.json
