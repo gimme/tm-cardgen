@@ -131,8 +131,12 @@ export function PreviewPane() {
             <span className="preview-hint">hold F for the other</span>
           </>
         )}
-        <span className="top-spacer" />
-        <button type="button" disabled={!layout || stale} onClick={() => void quickExport()}>
+        <button
+          type="button"
+          className="preview-export"
+          disabled={!layout || stale}
+          onClick={() => void quickExport()}
+        >
           Export PNG
         </button>
       </header>

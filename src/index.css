@@ -482,6 +482,12 @@ button {
 
 /* dev only: the reference render shown in the card's place */
 .preview-reference {
+  /* it grows into the row's spare room, up to a cap, and shrinks before the
+     toolbar wraps; a long file name is cut short */
+  flex: 1 1 0;
+  min-width: 6em;
+  max-width: 200px;
+  text-overflow: ellipsis;
   margin-left: 8px;
   padding: 2px 6px;
   border: 1px solid var(--border);
@@ -490,6 +496,12 @@ button {
   color: var(--text);
   font: inherit;
   font-size: 12px;
+}
+
+/* pushed right by an auto margin rather than a spacer, so the reference
+   picker gets the row's spare room first */
+.preview-export {
+  margin-left: auto;
 }
 
 .preview-hint {
