@@ -115,10 +115,10 @@ export const useStore = create<AppState>((set, get) => {
     get().selectCard(entry.id)
   }
 
-  /** the card, or the gallery when there is none */
+  /** the card, or nothing when there is none */
   const show = (id: string | undefined) => {
     if (id !== undefined) get().selectCard(id)
-    else set({ currentId: undefined, text: '', layout: undefined, stale: false, page: 'gallery' })
+    else set({ currentId: undefined, text: '', layout: undefined, stale: false })
   }
 
   return {
@@ -129,7 +129,7 @@ export const useStore = create<AppState>((set, get) => {
     stale: false,
     diagnostics: [],
     saveState: 'saved',
-    page: 'gallery',
+    page: 'editor',
     artManagerOpen: false,
     exportDialogOpen: false,
     artVersion: 0,

@@ -11,14 +11,15 @@ export function TopBar() {
   return (
     <header className="top-bar">
       <h1>
-        <a {...linkTo({ page: 'gallery' })}>tm-cardgen</a>
+        <a {...linkTo({ page: 'editor' })}>tm-cardgen</a>
       </h1>
-      {page === 'gallery' ? (
+      {page === 'editor' ? (
         <span className="top-subtitle">Terraforming Mars custom card generator</span>
       ) : (
-        <a {...linkTo({ page: 'gallery' })}>← Gallery</a>
+        <a {...linkTo({ page: 'editor' })}>← Editor</a>
       )}
       <span className="top-spacer" />
+      {page === 'editor' && <a {...linkTo({ page: 'gallery' })}>Gallery</a>}
       <button
         type="button"
         onClick={() => setExportDialogOpen(true)}

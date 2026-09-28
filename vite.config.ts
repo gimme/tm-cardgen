@@ -32,8 +32,8 @@ function referenceListing(): Plugin {
 }
 
 // Build only: the app again as 404.html, which GitHub Pages serves for an
-// address it has no file for. A reload or a link at a card's page
-// (card/<slug>) then starts the app, and the router shows that card.
+// address it has no file for. A reload or a link at the gallery or a card's
+// page (card/<slug>) then starts the app, and the router shows that page.
 function pagesFallback(): Plugin {
   let outDir = 'dist'
   return {

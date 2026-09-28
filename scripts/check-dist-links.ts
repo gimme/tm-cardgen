@@ -1,7 +1,7 @@
 // Checks that every asset link in dist/index.html carries the deploy base path
 // and exists on disk, the failure that only shows when Pages serves from
-// /<repo>/, and that dist/404.html is the same page, which Pages serves at a
-// card's address. Run: make verify-pages
+// /<repo>/, and that dist/404.html is the same page, which Pages serves at the
+// gallery's or a card's address. Run: make verify-pages
 import fs from 'node:fs'
 import path from 'node:path'
 
