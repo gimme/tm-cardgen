@@ -894,12 +894,15 @@ button {
   background: var(--stage);
 }
 
-/* the card count and New, or the selection and what to do with it; the
-   same height either way, so the grid holds still */
+/* the card count and New, or the selection and what to do with it, on
+   either side of the size slider. The slider holds the middle and the bar its
+   height either way, so neither the slider nor the grid moves as a selection
+   starts or ends */
 .gallery-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   padding: 6px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
@@ -930,8 +933,15 @@ button {
   color: var(--muted);
 }
 
-.gallery-bar-spacer {
-  flex: 1;
+.gallery-bar-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.gallery-bar-side.end {
+  justify-content: flex-end;
 }
 
 /* the size slider, between a small card and a large one */
@@ -939,7 +949,6 @@ button {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: 8px;
 }
 
 /* drawn here rather than by the browser, for the notch at the initial width
@@ -959,7 +968,7 @@ button {
     ),
     linear-gradient(to right, var(--accent) var(--fill-at), var(--border) 0);
   appearance: none;
-  width: 120px;
+  width: 80px;
   height: 16px;
   margin: 0;
   background: none;

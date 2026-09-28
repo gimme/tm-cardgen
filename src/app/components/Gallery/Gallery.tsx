@@ -90,27 +90,23 @@ export function Gallery() {
   return (
     <main className="gallery">
       <header className="gallery-bar">
-        {selecting ? (
-          <>
-            <button type="button" aria-label="Clear selection" onClick={() => setSel(NO_SELECTION)}>
-              ✕
-            </button>
-            <span>{selected.length} selected</span>
-            <span className="gallery-hint">click cards to add or take out</span>
-            <span className="gallery-bar-spacer" />
-            <button type="button" className="danger" onClick={() => remove(selected)}>
-              Delete
-            </button>
-          </>
-        ) : (
-          <>
+        <div className="gallery-bar-side">
+          {selecting ? (
+            <>
+              <button
+                type="button"
+                aria-label="Clear selection"
+                onClick={() => setSel(NO_SELECTION)}
+              >
+                ✕
+              </button>
+              <span>{selected.length} selected</span>
+              <span className="gallery-hint">click cards to add or take out</span>
+            </>
+          ) : (
             <span className="gallery-hint">{cardCount(cards.length)}</span>
-            <span className="gallery-bar-spacer" />
-            <button type="button" onClick={() => void create()}>
-              + New card
-            </button>
-          </>
-        )}
+          )}
+        </div>
         <SizeSlider
           width={cardWidth}
           onChange={(width) => {
@@ -118,6 +114,17 @@ export function Gallery() {
             storeWidth(width)
           }}
         />
+        <div className="gallery-bar-side end">
+          {selecting ? (
+            <button type="button" className="danger" onClick={() => remove(selected)}>
+              Delete
+            </button>
+          ) : (
+            <button type="button" onClick={() => void create()}>
+              + New card
+            </button>
+          )}
+        </div>
       </header>
       <div
         className="gallery-scroll"

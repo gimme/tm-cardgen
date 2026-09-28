@@ -1,7 +1,7 @@
 // How wide the gallery draws a card: the size slider's range, and the width
 // last picked on it, kept across visits.
 
-export const CARD_WIDTH = { min: 140, max: 500, step: 10, initial: 250 }
+export const CARD_WIDTH = { min: 140, max: 500, step: 20, initial: 260 }
 
 const KEY = 'tm-cardgen.galleryCardWidth'
 

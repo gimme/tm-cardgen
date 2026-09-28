@@ -15,7 +15,7 @@ describe('widthFrom', () => {
   it('brings a width back onto the slider', () => {
     expect(widthFrom('20')).toBe(CARD_WIDTH.min)
     expect(widthFrom('9000')).toBe(CARD_WIDTH.max)
-    expect(widthFrom('254')).toBe(250)
-    expect(widthFrom('256')).toBe(260)
+    expect(widthFrom('249')).toBe(240)
+    expect(widthFrom('251')).toBe(260)
   })
 })
