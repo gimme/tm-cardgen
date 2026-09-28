@@ -1,8 +1,17 @@
-// The gallery page: every card at once, as the preview draws it. A card
-// renders once it scrolls near the view, and links to its editor page.
+// The gallery page: every card at once, as the preview draws it, at the
+// width picked on the bar's slider. A card renders once it scrolls near the
+// view, and links to its editor page.
 // Ctrl/Cmd-click, Shift-click or a card's Select starts a selection; while
 // there is one, a click adds or takes out a card instead of opening it.
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+  type RefObject,
+} from 'react'
 import type { AssetRef } from '../../../core/index.ts'
 import { makePreviewResolver } from '../../services/assetService.ts'
 import { linkTo, openCard } from '../../router.ts'
@@ -11,6 +20,7 @@ import { getServices, layoutContext } from '../../store/services.ts'
 import { useStore, type CardEntry } from '../../store/useStore.ts'
 import { CARD_CORNER, CardSvg } from '../PreviewPane/CardSvg.tsx'
 import { extended, NO_SELECTION, toggled, without } from './selection.ts'
+import { CARD_WIDTH, storedWidth, storeWidth } from './size.ts'
 import { cachedTile } from './tile.ts'
 
 // how far past the view a card starts to render, so a scroll finds it drawn
@@ -24,6 +34,7 @@ export function Gallery() {
   const duplicateCard = useStore((s) => s.duplicateCard)
   const deleteCards = useStore((s) => s.deleteCards)
   const [sel, setSel] = useState(NO_SELECTION)
+  const [cardWidth, setCardWidth] = useState(storedWidth)
   // a card to scroll into view once it is there: a new copy, say
   const [reveal, setReveal] = useState<string>()
   const slugs = useMemo(() => cardSlugs(cards.map((c) => c.name)), [cards])
@@ -100,8 +111,19 @@ export function Gallery() {
             </button>
           </>
         )}
+        <SizeSlider
+          width={cardWidth}
+          onChange={(width) => {
+            setCardWidth(width)
+            storeWidth(width)
+          }}
+        />
       </header>
-      <div className="gallery-scroll" ref={scrollRef}>
+      <div
+        className="gallery-scroll"
+        ref={scrollRef}
+        style={{ '--card-w': `${cardWidth}px` } as CSSProperties}
+      >
         {cards.length === 0 ? (
           <div className="gallery-empty">No cards yet</div>
         ) : (
@@ -184,6 +206,35 @@ function GalleryTile({ card, slug, selected, onPick, scrollRef, resolveAsset }: 
         </span>
       )}
     </a>
+  )
+}
+
+interface SizeSliderProps {
+  width: number
+  onChange: (width: number) => void
+}
+
+/** the card width, between a small card and a large one; the initial width
+ *  is notched on the track, and a double-click goes back to it */
+function SizeSlider({ width, onChange }: SizeSliderProps) {
+  const { min, max, step, initial } = CARD_WIDTH
+  const along = (w: number) => (w - min) / (max - min)
+  return (
+    <label className="gallery-size" title="Card size">
+      <span className="gallery-size-card small" />
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={width}
+        onChange={(e) => onChange(Number(e.target.value))}
+        onDoubleClick={() => onChange(initial)}
+        style={{ '--fill': along(width), '--home': along(initial) } as CSSProperties}
+        aria-label="Card size"
+      />
+      <span className="gallery-size-card large" />
+    </label>
   )
 }
 

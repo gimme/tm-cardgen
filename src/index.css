@@ -934,6 +934,81 @@ button {
   flex: 1;
 }
 
+/* the size slider, between a small card and a large one */
+.gallery-size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+/* drawn here rather than by the browser, for the notch at the initial width
+   (--home) that the thumb covers there; --fill and --home are fractions of
+   the range, and the thumb's middle runs from --thumb/2 in to --thumb/2 short
+   of the end */
+.gallery-size input {
+  --thumb: 14px;
+  --fill-at: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--fill));
+  --home-at: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--home));
+  --track:
+    linear-gradient(
+      to right,
+      transparent calc(var(--home-at) - 1px),
+      var(--panel) 0 calc(var(--home-at) + 1px),
+      transparent 0
+    ),
+    linear-gradient(to right, var(--accent) var(--fill-at), var(--border) 0);
+  appearance: none;
+  width: 120px;
+  height: 16px;
+  margin: 0;
+  background: none;
+}
+
+.gallery-size input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--track);
+}
+
+.gallery-size input::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--track);
+}
+
+.gallery-size input::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc(2px - var(--thumb) / 2);
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.gallery-size input::-moz-range-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.gallery-size-card {
+  aspect-ratio: 63 / 88;
+  border: 1.5px solid var(--muted);
+  border-radius: 1.5px;
+}
+
+.gallery-size-card.small {
+  width: 7px;
+}
+
+.gallery-size-card.large {
+  width: 11px;
+}
+
 .gallery-scroll {
   flex: 1;
   min-height: 0;
@@ -941,10 +1016,15 @@ button {
   padding: 24px;
 }
 
+/* cards at exactly --card-w, the width picked on the bar's slider: as many
+   to a row as fit, the rows centered, narrower only when one card is wider
+   than the view. The gap grows with the cards, but leaves room for the
+   badges on their corners */
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, min(var(--card-w), 100%));
+  justify-content: center;
+  gap: max(20px, calc(var(--card-w) * 0.1));
   list-style: none;
   margin: 0;
   padding: 0;
