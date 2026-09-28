@@ -60,10 +60,13 @@ button {
   color: var(--muted);
 }
 
+/* narrower than the panes' minimums, the whole app scrolls sideways as one,
+   the top bar with it */
 .app-shell {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: min-content;
 }
 
 /* ---- top bar ---- */
@@ -121,7 +124,8 @@ button {
 /* ---- panes ---- */
 .app-panes {
   display: grid;
-  grid-template-columns: 220px minmax(320px, 1fr) minmax(340px, 1fr);
+  /* the preview's minimum keeps its toolbar's buttons on one row */
+  grid-template-columns: 220px minmax(240px, 1fr) minmax(280px, 1fr);
   flex: 1;
   min-height: 0;
 }
