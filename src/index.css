@@ -953,13 +953,6 @@ button {
   padding: 0;
   background: var(--panel);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-  transition: transform 0.1s;
-}
-
-/* the card and its menu button lift together */
-.gallery-grid li:hover .gallery-tile,
-.gallery-grid li:hover .tile-menu {
-  transform: translateY(-3px);
 }
 
 .gallery-tile.selected {
@@ -1031,7 +1024,6 @@ button {
   top: -10px;
   right: -10px;
   z-index: 2;
-  transition: transform 0.1s;
 }
 
 .tile-menu.open {
