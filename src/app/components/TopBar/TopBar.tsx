@@ -1,3 +1,4 @@
+import { linkTo } from '../../router.ts'
 import { useStore } from '../../store/useStore.ts'
 
 export function TopBar() {
@@ -5,11 +6,18 @@ export function TopBar() {
   const setExportDialogOpen = useStore((s) => s.setExportDialogOpen)
   const restoreSamples = useStore((s) => s.restoreSamples)
   const dirty = useStore((s) => s.dirtySinceExport)
+  const page = useStore((s) => s.page)
 
   return (
     <header className="top-bar">
-      <h1>tm-cardgen</h1>
-      <span className="top-subtitle">Terraforming Mars custom card generator</span>
+      <h1>
+        <a {...linkTo({ page: 'gallery' })}>tm-cardgen</a>
+      </h1>
+      {page === 'gallery' ? (
+        <span className="top-subtitle">Terraforming Mars custom card generator</span>
+      ) : (
+        <a {...linkTo({ page: 'gallery' })}>← Gallery</a>
+      )}
       <span className="top-spacer" />
       <button
         type="button"

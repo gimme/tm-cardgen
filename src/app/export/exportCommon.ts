@@ -47,14 +47,6 @@ export async function exportSvg(layout: CardLayout): Promise<string> {
   })
 }
 
-export function slugify(name: string): string {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return slug || 'card'
-}
-
 /** a Blob over bytes (the DOM's BlobPart type rejects a Uint8Array<ArrayBufferLike>) */
 export function bytesToBlob(bytes: Uint8Array, type: string): Blob {
   return new Blob([bytes as unknown as BlobPart], { type })

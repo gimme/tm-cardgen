@@ -1,6 +1,7 @@
 // Checks that every asset link in dist/index.html carries the deploy base path
 // and exists on disk, the failure that only shows when Pages serves from
-// /<repo>/. Run: make verify-pages
+// /<repo>/, and that dist/404.html is the same page, which Pages serves at a
+// card's address. Run: make verify-pages
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -25,6 +26,12 @@ for (const ref of refs) {
     console.error(`missing: ${ref}`)
     bad++
   }
+}
+
+const fallback = path.join(dist, '404.html')
+if (!fs.existsSync(fallback) || fs.readFileSync(fallback, 'utf8') !== html) {
+  console.error(`${fallback} is not a copy of index.html`)
+  bad++
 }
 
 if (bad > 0) {

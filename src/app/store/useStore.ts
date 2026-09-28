@@ -36,6 +36,9 @@ export interface AppState {
   stale: boolean
   diagnostics: Diagnostic[]
   saveState: 'saved' | 'saving' | 'error'
+  /** every card at once, or the current card's list, editor and preview;
+   *  the router keeps the address bar in step */
+  page: 'gallery' | 'editor'
   artManagerOpen: boolean
   exportDialogOpen: boolean
   /** bumps when art changes, so views depending on the art cache refresh */
@@ -69,6 +72,7 @@ export interface AppState {
   /** the cards naming the file follow it; a name already taken is refused */
   renameArt(from: string, to: string): Promise<void>
 
+  setPage(page: AppState['page']): void
   setArtManagerOpen(open: boolean): void
   setExportDialogOpen(open: boolean): void
 }
@@ -106,10 +110,10 @@ export const useStore = create<AppState>((set, get) => {
     get().selectCard(entry.id)
   }
 
-  /** the card, or nothing when there is none */
+  /** the card, or the gallery when there is none */
   const show = (id: string | undefined) => {
     if (id !== undefined) get().selectCard(id)
-    else set({ currentId: undefined, text: '', layout: undefined, stale: false })
+    else set({ currentId: undefined, text: '', layout: undefined, stale: false, page: 'gallery' })
   }
 
   return {
@@ -120,6 +124,7 @@ export const useStore = create<AppState>((set, get) => {
     stale: false,
     diagnostics: [],
     saveState: 'saved',
+    page: 'gallery',
     artManagerOpen: false,
     exportDialogOpen: false,
     artVersion: 0,
@@ -284,6 +289,10 @@ export const useStore = create<AppState>((set, get) => {
       }))
       // notifies, and the current card lays out again under the new name
       art.rename(from, to)
+    },
+
+    setPage(page) {
+      set({ page })
     },
 
     setArtManagerOpen(open) {

@@ -4,7 +4,8 @@
 //   art/<filename>        art blobs
 import { strToU8, zipSync, type Zippable } from 'fflate'
 import { getServices } from '../store/services.ts'
-import { bytesToBlob, slugify } from './exportCommon.ts'
+import { cardSlugs } from '../store/cardName.ts'
+import { bytesToBlob } from './exportCommon.ts'
 import type { CardEntry } from '../store/useStore.ts'
 
 export interface ProjectManifest {
@@ -17,16 +18,10 @@ export interface ProjectManifest {
 export async function exportProjectZip(cards: CardEntry[]): Promise<Blob> {
   const { store } = getServices()
   const files: Zippable = {}
-  const order: string[] = []
-  const usedSlugs = new Set<string>()
-  for (const card of cards) {
-    let slug = slugify(card.name)
-    let n = 2
-    while (usedSlugs.has(slug)) slug = `${slugify(card.name)}-${n++}`
-    usedSlugs.add(slug)
-    order.push(slug)
-    files[`cards/${slug}.yaml`] = strToU8(card.yamlText)
-  }
+  const order = cardSlugs(cards.map((c) => c.name))
+  cards.forEach((card, i) => {
+    files[`cards/${order[i]}.yaml`] = strToU8(card.yamlText)
+  })
 
   for (const art of await store.listArt()) {
     files[`art/${art.name}`] = new Uint8Array(await art.blob.arrayBuffer())

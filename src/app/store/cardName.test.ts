@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { copyName, extractName, withName } from './cardName.ts'
+import { cardSlugs, copyName, extractName, slugify, withName } from './cardName.ts'
 
 describe('withName', () => {
   it('rewrites a plain name line and leaves the rest alone', () => {
@@ -35,5 +35,27 @@ describe('copyName', () => {
 
   it('counts from the base when copying a copy', () => {
     expect(copyName('Pets (1)', ['Pets', 'Pets (1)'])).toBe('Pets (2)')
+  })
+})
+
+describe('slugify', () => {
+  it('keeps lowercase letters and digits, dashes between', () => {
+    expect(slugify('Meteor Swarm (2)')).toBe('meteor-swarm-2')
+    expect(slugify('  ASTEROID—MINING  ')).toBe('asteroid-mining')
+  })
+
+  it('falls back when nothing is left', () => {
+    expect(slugify('???')).toBe('card')
+  })
+})
+
+describe('cardSlugs', () => {
+  it('numbers a repeat from 2, and steps past a slug already taken', () => {
+    expect(cardSlugs(['Pets', 'Pets 2', 'Pets', 'Moss'])).toEqual([
+      'pets',
+      'pets-2',
+      'pets-3',
+      'moss',
+    ])
   })
 })

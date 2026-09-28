@@ -17,6 +17,29 @@ export function withName(text: string, name: string): string {
   })
 }
 
+/** A card name as it goes into a file name or an address: lowercase letters,
+ *  digits and dashes. */
+export function slugify(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return slug || 'card'
+}
+
+/** Each card's slug, in the order given: a name's first card has it bare,
+ *  and any later card whose slug is taken counts up from -2. */
+export function cardSlugs(names: string[]): string[] {
+  const used = new Set<string>()
+  return names.map((name) => {
+    const base = slugify(name)
+    let slug = base
+    for (let n = 2; used.has(slug); n++) slug = `${base}-${n}`
+    used.add(slug)
+    return slug
+  })
+}
+
 /** The name for a copy of `source`: "X (1)", or the first free number; a copy
  *  of "X (2)" counts up from the same base. */
 export function copyName(source: string, taken: Iterable<string>): string {

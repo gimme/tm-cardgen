@@ -1,6 +1,7 @@
 import { zipSync, type Zippable } from 'fflate'
 import { CARD_H, CARD_W, mmToPx, type CardLayout } from '../../core/index.ts'
-import { bytesToBlob, exportSvg, layoutFromText, slugify } from './exportCommon.ts'
+import { slugify } from '../store/cardName.ts'
+import { bytesToBlob, exportSvg, layoutFromText } from './exportCommon.ts'
 
 export type ExportDpi = 300 | 600
 

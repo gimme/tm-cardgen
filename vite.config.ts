@@ -1,6 +1,6 @@
 /// <reference types="vitest/config" />
-import { readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { copyFileSync, readdirSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -31,10 +31,27 @@ function referenceListing(): Plugin {
   }
 }
 
+// Build only: the app again as 404.html, which GitHub Pages serves for an
+// address it has no file for. A reload or a link at a card's page
+// (card/<slug>) then starts the app, and the router shows that card.
+function pagesFallback(): Plugin {
+  let outDir = 'dist'
+  return {
+    name: 'pages-fallback',
+    apply: 'build',
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir)
+    },
+    closeBundle() {
+      copyFileSync(join(outDir, 'index.html'), join(outDir, '404.html'))
+    },
+  }
+}
+
 // On GitHub Pages the app is served from /<repo>/; CI sets BASE_PATH.
 export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
-  plugins: [react(), referenceListing()],
+  plugins: [react(), referenceListing(), pagesFallback()],
   test: {
     // core and most of the app test in plain node; a file that mounts the
     // editor says `@vitest-environment jsdom` at its top

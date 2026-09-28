@@ -3,6 +3,7 @@ import { loadFonts } from './services/assetService.ts'
 import { ArtCache } from './services/artCache.ts'
 import { IdbProjectStore } from './storage/IdbProjectStore.ts'
 import { seedSamples } from './storage/seed.ts'
+import { startRouter } from './router.ts'
 import { setServices } from './store/services.ts'
 import { useStore } from './store/useStore.ts'
 
@@ -22,6 +23,7 @@ export async function initApp(): Promise<void> {
   art.subscribe(() => useStore.getState().recompute())
 
   await useStore.getState().reloadFromStore()
+  startRouter()
   useStore.setState({ status: 'ready' })
 
   // a file dropped outside the art panel would otherwise open in the tab

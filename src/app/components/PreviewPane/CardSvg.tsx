@@ -24,7 +24,7 @@ interface CardSvgProps {
 }
 
 // the cut corner as percentages, so CSS scales it with the rendered card
-const CORNER = `${fmt((CARD_R / CARD_W) * 100)}% / ${fmt((CARD_R / CARD_H) * 100)}%`
+export const CARD_CORNER = `${fmt((CARD_R / CARD_W) * 100)}% / ${fmt((CARD_R / CARD_H) * 100)}%`
 
 export function CardSvg({ layout, resolveAsset, calibrate, reference }: CardSvgProps) {
   // HTML resolves url(#...) page-wide across inline <svg>s, so every mounted
@@ -39,7 +39,7 @@ export function CardSvg({ layout, resolveAsset, calibrate, reference }: CardSvgP
   return (
     <svg
       viewBox={`0 0 ${CARD_W} ${CARD_H}`}
-      style={{ borderRadius: CORNER }}
+      style={{ borderRadius: CARD_CORNER }}
       xmlns="http://www.w3.org/2000/svg"
     >
       {reference ? (
