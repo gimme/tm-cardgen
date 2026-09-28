@@ -222,6 +222,14 @@ button {
     cursive;
 }
 
+/* a short window has no room for the note under a card's text; it shows
+   once the window is taller again */
+@media (max-height: 440px) {
+  .sheet-hint {
+    display: none;
+  }
+}
+
 .editor-host .cm-editor {
   height: 100%;
 }
