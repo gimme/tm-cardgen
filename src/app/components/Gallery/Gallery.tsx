@@ -158,6 +158,11 @@ function GalleryTile({ card, slug, selected, onPick, scrollRef, resolveAsset }: 
     <a
       ref={ref}
       href={link.href}
+      // a click leaves the focus where it was: on the card, the next key
+      // pressed (Shift for a range, say) would show its keyboard focus ring
+      onMouseDown={(e) => {
+        if (e.button === 0) e.preventDefault()
+      }}
       onClick={(e) => {
         if (onPick(e)) e.preventDefault()
         else link.onClick(e)
