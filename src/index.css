@@ -123,6 +123,20 @@ button {
   background: var(--panel-2);
 }
 
+/* the page switch, set off from the actions after it */
+.top-nav {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+}
+
+.top-bar a[aria-current='page'] {
+  color: var(--text);
+  background: var(--panel-2);
+}
+
 .top-bar h1 a,
 .top-bar h1 a:hover {
   padding: 0;

@@ -13,13 +13,17 @@ export function TopBar() {
       <h1>
         <a {...linkTo({ page: 'editor' })}>tm-cardgen</a>
       </h1>
-      {page === 'editor' ? (
-        <span className="top-subtitle">Terraforming Mars custom card generator</span>
-      ) : (
-        <a {...linkTo({ page: 'editor' })}>← Editor</a>
-      )}
+      <span className="top-subtitle">Terraforming Mars custom card generator</span>
       <span className="top-spacer" />
-      {page === 'editor' && <a {...linkTo({ page: 'gallery' })}>Gallery</a>}
+      {/* both pages always, in one place, so the way back is where the way there was */}
+      <nav className="top-nav">
+        <a {...linkTo({ page: 'editor' })} aria-current={page === 'editor' ? 'page' : undefined}>
+          Editor
+        </a>
+        <a {...linkTo({ page: 'gallery' })} aria-current={page === 'gallery' ? 'page' : undefined}>
+          Gallery
+        </a>
+      </nav>
       <button
         type="button"
         onClick={() => setExportDialogOpen(true)}
