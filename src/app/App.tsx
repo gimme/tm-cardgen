@@ -6,6 +6,7 @@ import { PreviewPane } from './components/PreviewPane/PreviewPane.tsx'
 import { Gallery } from './components/Gallery/Gallery.tsx'
 import { ArtManager } from './components/ArtManager/ArtManager.tsx'
 import { ExportDialog } from './components/ExportDialog/ExportDialog.tsx'
+import { UndoToast } from './components/UndoToast/UndoToast.tsx'
 
 export default function App() {
   const status = useStore((s) => s.status)
@@ -30,6 +31,7 @@ export default function App() {
       {page === 'gallery' && <Gallery />}
       {artManagerOpen && <ArtManager />}
       {exportDialogOpen && <ExportDialog />}
+      <UndoToast />
     </div>
   )
 }

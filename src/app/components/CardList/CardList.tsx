@@ -33,7 +33,7 @@ export function CardList() {
   const selectCard = useStore((s) => s.selectCard)
   const newCard = useStore((s) => s.newCard)
   const duplicateCard = useStore((s) => s.duplicateCard)
-  const deleteCard = useStore((s) => s.deleteCard)
+  const deleteCards = useStore((s) => s.deleteCards)
   const moveCard = useStore((s) => s.moveCard)
   const [query, setQuery] = useState('')
   const [dragId, setDragId] = useState<string>()
@@ -77,10 +77,7 @@ export function CardList() {
         <button
           type="button"
           disabled={!currentId}
-          onClick={() => {
-            const card = cards.find((c) => c.id === currentId)
-            if (card && confirm(`Delete "${card.name}"?`)) void deleteCard(card.id)
-          }}
+          onClick={() => currentId && void deleteCards([currentId])}
         >
           Delete
         </button>

@@ -45,6 +45,8 @@ export interface AppState {
   artVersion: number
   /** changes since the last zip export; drives the backup nudge */
   dirtySinceExport: boolean
+  /** the cards the last delete took, until it is undone or dismissed */
+  deleted?: CardEntry[]
 
   selectCard(id: string): void
   updateText(text: string): void
@@ -53,7 +55,10 @@ export interface AppState {
 
   newCard(): Promise<void>
   duplicateCard(id: string): Promise<void>
-  deleteCard(id: string): Promise<void>
+  deleteCards(ids: string[]): Promise<void>
+  /** the cards the last delete took, back in their places */
+  undoDelete(): Promise<void>
+  dismissDeleted(): void
   moveCard(id: string, toIndex: number): Promise<void>
   restoreSamples(): Promise<void>
   /** cards and the dirty flag from the store; keeps the current card, else
@@ -195,12 +200,30 @@ export const useStore = create<AppState>((set, get) => {
       await addCard(name, withName(source.yamlText, name))
     },
 
-    async deleteCard(id) {
+    async deleteCards(ids) {
       const { cards, currentId } = get()
-      await getServices().store.deleteCard(id)
-      const remaining = cards.filter((c) => c.id !== id)
-      set({ cards: remaining })
-      if (currentId === id) show(remaining[0]?.id)
+      const gone = cards.filter((c) => ids.includes(c.id))
+      if (gone.length === 0) return
+      const { store } = getServices()
+      for (const c of gone) await store.deleteCard(c.id)
+      const remaining = cards.filter((c) => !ids.includes(c.id))
+      set({ cards: remaining, deleted: gone })
+      if (currentId !== undefined && ids.includes(currentId)) show(remaining[0]?.id)
+    },
+
+    async undoDelete() {
+      const { deleted } = get()
+      if (!deleted) return
+      const { store } = getServices()
+      for (const c of deleted) await store.putCard({ ...c, updatedAt: Date.now() })
+      set((s) => ({
+        deleted: undefined,
+        cards: [...s.cards, ...deleted].sort((a, b) => a.sortIndex - b.sortIndex),
+      }))
+    },
+
+    dismissDeleted() {
+      set({ deleted: undefined })
     },
 
     async moveCard(id, toIndex) {

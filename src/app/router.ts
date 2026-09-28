@@ -61,6 +61,13 @@ export function navigate(route: Route) {
   show(route)
 }
 
+/** the card's editor page, as a new history entry */
+export function openCard(id: string) {
+  const { cards } = useStore.getState()
+  const i = cards.findIndex((c) => c.id === id)
+  if (i !== -1) navigate({ page: 'editor', slug: cardSlugs(cards.map((c) => c.name))[i] })
+}
+
 /** href and click handler for a link to `route`: a plain click navigates in
  *  place, and a modified one is the browser's (a new tab, say) */
 export function linkTo(route: Route) {
