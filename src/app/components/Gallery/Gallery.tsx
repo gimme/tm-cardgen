@@ -24,7 +24,7 @@ import { getServices, layoutContext } from '../../store/services.ts'
 import { useStore, type CardEntry } from '../../store/useStore.ts'
 import { CARD_CORNER, CardSvg } from '../PreviewPane/CardSvg.tsx'
 import { extended, NO_SELECTION, toggled, without } from './selection.ts'
-import { CARD_WIDTH, storedWidth, storeWidth } from './size.ts'
+import { CARD_WIDTH, stopOf, storedWidth, storeWidth, widthAt } from './size.ts'
 import { cachedTile } from './tile.ts'
 
 // how far past the view a card starts to render, so a scroll finds it drawn
@@ -263,24 +263,25 @@ interface SizeSliderProps {
   onChange: (width: number) => void
 }
 
-/** the card width, between a small card and a large one; the initial width
- *  is notched on the track, and a double-click goes back to it */
+/** the card width, between a small card and a large one, a stop at a time;
+ *  the initial width is notched on the track, and a double-click goes back
+ *  to it */
 function SizeSlider({ width, onChange }: SizeSliderProps) {
-  const { min, max, step, initial } = CARD_WIDTH
-  const along = (w: number) => (w - min) / (max - min)
+  const { steps, initial } = CARD_WIDTH
+  const along = (w: number) => stopOf(w) / steps
   return (
     <label className="gallery-size" title="Card size">
       <span className="gallery-size-card small" />
       <input
         type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={width}
-        onChange={(e) => onChange(Number(e.target.value))}
+        min={0}
+        max={steps}
+        value={stopOf(width)}
+        onChange={(e) => onChange(widthAt(Number(e.target.value)))}
         onDoubleClick={() => onChange(initial)}
         style={{ '--fill': along(width), '--home': along(initial) } as CSSProperties}
         aria-label="Card size"
+        aria-valuetext={`${width} pixels`}
       />
       <span className="gallery-size-card large" />
     </label>
