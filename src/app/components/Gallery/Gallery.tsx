@@ -32,8 +32,8 @@ const RENDER_MARGIN = '600px'
 
 const cardCount = (n: number) => `${n} card${n === 1 ? '' : 's'}`
 
-// from the width a card is laid out at, the slider's widest, to the width
-// picked on it
+// from the width a card is laid out at, the slider's widest, to its tile's:
+// the width picked on the slider, or the view's where that is narrower
 const CardScale = createContext(1)
 
 export function Gallery() {
@@ -50,6 +50,7 @@ export function Gallery() {
   const selected = order.filter((id) => sel.ids.has(id))
   const selecting = selected.length > 0
   const scrollRef = useRef<HTMLDivElement>(null)
+  const gridWidth = useContentWidth(scrollRef)
   const resolveAsset = useMemo(() => {
     const { art } = getServices()
     return makePreviewResolver((file) => art.url(file))
@@ -175,7 +176,7 @@ export function Gallery() {
         {cards.length === 0 ? (
           <div className="gallery-empty">No cards yet</div>
         ) : (
-          <CardScale value={cardWidth / CARD_WIDTH.max}>
+          <CardScale value={Math.min(cardWidth, gridWidth) / CARD_WIDTH.max}>
             <ul className="gallery-grid" style={{ '--card-w': `${cardWidth}px` } as CSSProperties}>
               {tiles}
             </ul>
@@ -241,8 +242,8 @@ function GalleryTile({ card, slug, selected, onPick, scrollRef, resolveAsset }: 
   )
 }
 
-/** a card laid out at the slider's widest and scaled down to the width
- *  picked on it, so a new width changes nothing inside the card */
+/** a card laid out at the slider's widest and scaled down to its tile, so a
+ *  new width changes nothing inside the card */
 function ScaledCard({ children }: { children: ReactNode }) {
   const scale = useContext(CardScale)
   return (
@@ -369,4 +370,18 @@ function useNear(ref: RefObject<Element | null>, rootRef: RefObject<Element | nu
     return () => observer.disconnect()
   }, [ref, rootRef, near])
   return near
+}
+
+/** the element's width inside its padding and scrollbar, kept up to date as
+ *  it changes; Infinity until it is first measured */
+function useContentWidth(ref: RefObject<Element | null>): number {
+  const [width, setWidth] = useState(Infinity)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ref])
+  return width
 }
