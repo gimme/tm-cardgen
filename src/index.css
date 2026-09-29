@@ -1148,10 +1148,11 @@ button {
   color: var(--error);
 }
 
-/* on the corner across from the menu button */
+/* on a bottom corner, always shown: the top ones hold the buttons shown on
+   hover */
 .gallery-warn {
   position: absolute;
-  top: -8px;
+  bottom: -8px;
   left: -8px;
   display: grid;
   place-items: center;
@@ -1170,6 +1171,50 @@ button {
   place-items: center;
   height: 100%;
   color: var(--muted);
+}
+
+/* on the card's top-left corner, like the menu on its top-right: above the
+   card, shown on hover, and on every card while there is a selection */
+.tile-check {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--panel-2);
+  color: var(--muted);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.tile-check:hover {
+  color: var(--text);
+}
+
+.tile-check.selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.gallery-grid li:hover .tile-check,
+.gallery-grid.selecting .tile-check,
+.tile-check:focus-visible {
+  opacity: 1;
+}
+
+/* with no hover to show it, a touch screen always has it to tap */
+@media (hover: none) {
+  .tile-check {
+    opacity: 1;
+  }
 }
 
 /* on the card's corner, clear of what is printed there; above the cards

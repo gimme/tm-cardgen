@@ -1,7 +1,7 @@
 // The gallery page: every card at once, as the preview draws it, at the
 // width picked on the bar's slider. A card renders once it scrolls near the
 // view, and links to its editor page.
-// Ctrl/Cmd-click, Shift-click or a card's Select starts a selection; while
+// Ctrl/Cmd-click, Shift-click or a card's check starts a selection; while
 // there is one, a click adds or takes out a card instead of opening it.
 import {
   createContext,
@@ -109,6 +109,13 @@ export function Gallery() {
     () =>
       cards.map((card, i) => (
         <li key={card.id} data-card-id={card.id}>
+          <TileCheck
+            name={card.name}
+            selected={sel.ids.has(card.id)}
+            onPick={(e) =>
+              setSel((s) => (e.shiftKey ? extended(s, order, card.id) : toggled(s, card.id)))
+            }
+          />
           <GalleryTile
             card={card}
             slug={slugs[i]}
@@ -123,8 +130,6 @@ export function Gallery() {
             resolveAsset={resolveAsset}
           />
           <TileMenu
-            selected={sel.ids.has(card.id)}
-            onSelect={() => setSel((s) => toggled(s, card.id))}
             onDuplicate={() => void duplicate(card.id)}
             onDelete={() => remove([card.id])}
           />
@@ -177,7 +182,10 @@ export function Gallery() {
           <div className="gallery-empty">No cards yet</div>
         ) : (
           <CardScale value={Math.min(cardWidth, gridWidth) / CARD_WIDTH.max}>
-            <ul className="gallery-grid" style={{ '--card-w': `${cardWidth}px` } as CSSProperties}>
+            <ul
+              className={`gallery-grid ${selecting ? 'selecting' : ''}`}
+              style={{ '--card-w': `${cardWidth}px` } as CSSProperties}
+            >
               {tiles}
             </ul>
           </CardScale>
@@ -288,15 +296,49 @@ function SizeSlider({ width, onChange }: SizeSliderProps) {
   )
 }
 
-interface TileMenuProps {
+interface TileCheckProps {
+  name: string
   selected: boolean
-  onSelect: () => void
+  /** a click on the check: a Shift-click ranges, as on the card */
+  onPick: (e: MouseEvent) => void
+}
+
+/** a card's round check, which takes it in or out of the selection */
+function TileCheck({ name, selected, onPick }: TileCheckProps) {
+  return (
+    <button
+      type="button"
+      className={`tile-check ${selected ? 'selected' : ''}`}
+      aria-label={`Select ${name}`}
+      aria-pressed={selected}
+      // as on the card, a click leaves the focus where it was, so a Shift
+      // for the next check's range doesn't ring this one
+      onMouseDown={(e) => {
+        if (e.button === 0) e.preventDefault()
+      }}
+      onClick={onPick}
+    >
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path
+          d="M3 8.5l3.2 3L13 4.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  )
+}
+
+interface TileMenuProps {
   onDuplicate: () => void
   onDelete: () => void
 }
 
 /** a card's ⋮ menu, closed by a click outside it or Escape */
-function TileMenu({ selected, onSelect, onDuplicate, onDelete }: TileMenuProps) {
+function TileMenu({ onDuplicate, onDelete }: TileMenuProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -344,9 +386,6 @@ function TileMenu({ selected, onSelect, onDuplicate, onDelete }: TileMenuProps) 
       </button>
       {open && (
         <div className="tile-menu-items" role="menu">
-          <button type="button" role="menuitem" onClick={pick(onSelect)}>
-            {selected ? 'Deselect' : 'Select'}
-          </button>
           <button type="button" role="menuitem" onClick={pick(onDuplicate)}>
             Duplicate
           </button>
