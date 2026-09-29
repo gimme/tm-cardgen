@@ -124,6 +124,8 @@ export function Gallery() {
           <li
             key={card.id}
             data-card-id={card.id}
+            // shown as under the pointer while its menu is open
+            className={menu?.id === card.id ? 'menu-open' : undefined}
             onContextMenu={(e) => {
               // with Shift, the browser's own menu: a new tab, say
               if (e.shiftKey) return

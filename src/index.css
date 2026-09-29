@@ -1174,7 +1174,8 @@ button {
 }
 
 /* on the card's top-left corner, like the menu on its top-right: above the
-   card, shown on hover, and on every card while there is a selection */
+   card, shown on hover or while the card's menu is open, and on every card
+   while there is a selection */
 .tile-check {
   position: absolute;
   top: -10px;
@@ -1205,6 +1206,7 @@ button {
 }
 
 .gallery-grid li:hover .tile-check,
+.gallery-grid li.menu-open .tile-check,
 .gallery-grid.selecting .tile-check,
 .tile-check:focus-visible {
   opacity: 1;
@@ -1254,8 +1256,8 @@ button {
 }
 
 .gallery-grid li:hover .tile-menu-button,
-.tile-menu-button:focus-visible,
-.tile-menu.open .tile-menu-button {
+.gallery-grid li.menu-open .tile-menu-button,
+.tile-menu-button:focus-visible {
   opacity: 1;
 }
 
