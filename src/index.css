@@ -1173,12 +1173,19 @@ button {
 }
 
 /* on the card's corner, clear of what is printed there; above the cards
-   after it, and an open one above the other menus */
+   after it, and an open one above the other menus. Only the round button
+   and the open menu take the pointer: the square around the button would
+   catch a click on the card under its corner and do nothing with it */
 .tile-menu {
   position: absolute;
   top: -10px;
   right: -10px;
   z-index: 2;
+  pointer-events: none;
+}
+
+.tile-menu > * {
+  pointer-events: auto;
 }
 
 .tile-menu.open {
@@ -1191,12 +1198,11 @@ button {
   place-items: center;
   width: 28px;
   height: 28px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--panel-2);
   color: var(--text);
-  font-size: 18px;
-  line-height: 1;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
   opacity: 0;
   transition: opacity 0.1s;

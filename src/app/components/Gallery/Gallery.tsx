@@ -335,7 +335,12 @@ function TileMenu({ selected, onSelect, onDuplicate, onDelete }: TileMenuProps) 
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        ⋮
+        {/* drawn rather than a ⋮, which each font seats off the middle */}
+        <svg viewBox="0 0 4 16" width="4" height="16" aria-hidden="true">
+          <circle cx="2" cy="3" r="1.5" fill="currentColor" />
+          <circle cx="2" cy="8" r="1.5" fill="currentColor" />
+          <circle cx="2" cy="13" r="1.5" fill="currentColor" />
+        </svg>
       </button>
       {open && (
         <div className="tile-menu-items" role="menu">
