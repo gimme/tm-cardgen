@@ -31,9 +31,11 @@ export function CardSvg({ layout, resolveAsset, calibrate, reference }: CardSvgP
   // card scopes its generated ids with its own prefix (useId is unique per
   // mount; sanitized because ':' breaks url() fragment references)
   const idPrefix = `${useId().replace(/[^a-zA-Z0-9_-]/g, '')}-`
-  // memoized: the frame markup is rebuilt from scratch on every call
+  // memoized: the frame markup is rebuilt from scratch on every call, and
+  // React sets innerHTML again on any render that passes it a new object,
+  // even one around the same string
   const markup = useMemo(
-    () => renderSvgMarkup(layout, { resolveAsset, idPrefix }),
+    () => ({ __html: renderSvgMarkup(layout, { resolveAsset, idPrefix }) }),
     [layout, resolveAsset, idPrefix],
   )
   return (
@@ -45,7 +47,7 @@ export function CardSvg({ layout, resolveAsset, calibrate, reference }: CardSvgP
       {reference ? (
         <image href={reference} width={CARD_W} height={CARD_H} preserveAspectRatio="none" />
       ) : (
-        <g dangerouslySetInnerHTML={{ __html: markup }} />
+        <g dangerouslySetInnerHTML={markup} />
       )}
       {calibrate && <CalibrationOverlay layout={layout} />}
     </svg>

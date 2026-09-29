@@ -1018,11 +1018,23 @@ button {
   width: 11px;
 }
 
+/* opaque, the stage over again: a scroller Chrome can't tell is opaque
+   scrolls on the compositor only at a high enough pixel ratio (2, but not
+   1.5), and below it draws the cards over again for every frame of a scroll */
 .gallery-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 24px;
+  background: var(--stage);
+}
+
+/* not inherited: a change to an inherited property restyles every element in
+   every card, which a drag on the size slider makes many times a second */
+@property --card-w {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
 }
 
 /* cards at exactly --card-w, the width picked on the bar's slider: as many
@@ -1066,6 +1078,31 @@ button {
 .gallery-tile:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 4px;
+}
+
+/* the tile's box, which the card overflows until it is scaled down to it.
+   Laid out and painted only near the view, so a new width redraws the cards
+   on screen and not every card drawn so far */
+.gallery-card {
+  height: 100%;
+  content-visibility: auto;
+}
+
+/* scaled down to the tile from its top-left corner by the component */
+.gallery-scaled {
+  transform-origin: 0 0;
+}
+
+/* while the size slider is held, the cards are scaled as pictures rather than
+   drawn over again at every step, and drawn sharp once it is let go. Their
+   text meanwhile sets the same at any size: Chrome keeps the letter spacing
+   it set for the size the drag started at */
+.gallery:has(.gallery-size input:active) .gallery-scaled {
+  will-change: transform;
+}
+
+.gallery:has(.gallery-size input:active) .gallery-scaled svg {
+  text-rendering: geometricPrecision;
 }
 
 .gallery-tile svg {

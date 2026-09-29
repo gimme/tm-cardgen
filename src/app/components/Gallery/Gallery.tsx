@@ -4,12 +4,16 @@
 // Ctrl/Cmd-click, Shift-click or a card's Select starts a selection; while
 // there is one, a click adds or takes out a card instead of opening it.
 import {
+  createContext,
+  useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
   type MouseEvent,
+  type ReactNode,
   type RefObject,
 } from 'react'
 import type { AssetRef } from '../../../core/index.ts'
@@ -27,6 +31,10 @@ import { cachedTile } from './tile.ts'
 const RENDER_MARGIN = '600px'
 
 const cardCount = (n: number) => `${n} card${n === 1 ? '' : 's'}`
+
+// from the width a card is laid out at, the slider's widest, to the width
+// picked on it
+const CardScale = createContext(1)
 
 export function Gallery() {
   const cards = useStore((s) => s.cards)
@@ -71,21 +79,58 @@ export function Gallery() {
     return () => window.removeEventListener('keydown', onKey)
   }, [selecting])
 
-  const remove = (ids: string[]) => {
-    setSel((s) => without(s, ids))
-    void deleteCards(ids)
-  }
+  const remove = useCallback(
+    (ids: string[]) => {
+      setSel((s) => without(s, ids))
+      void deleteCards(ids)
+    },
+    [deleteCards],
+  )
 
-  const duplicate = async (id: string) => {
-    await duplicateCard(id)
-    setReveal(useStore.getState().currentId)
-  }
+  const duplicate = useCallback(
+    async (id: string) => {
+      await duplicateCard(id)
+      setReveal(useStore.getState().currentId)
+    },
+    [duplicateCard],
+  )
 
   const create = async () => {
     await newCard()
     const { currentId } = useStore.getState()
     if (currentId !== undefined) openCard(currentId)
   }
+
+  // built again only as the cards or the selection change, so a drag on the
+  // size slider, which renders the gallery many times a second, leaves the
+  // tiles be
+  const tiles = useMemo(
+    () =>
+      cards.map((card, i) => (
+        <li key={card.id} data-card-id={card.id}>
+          <GalleryTile
+            card={card}
+            slug={slugs[i]}
+            selected={sel.ids.has(card.id)}
+            onPick={(e) => {
+              if (e.shiftKey) setSel((s) => extended(s, order, card.id))
+              else if (e.ctrlKey || e.metaKey || selecting) setSel((s) => toggled(s, card.id))
+              else return false
+              return true
+            }}
+            scrollRef={scrollRef}
+            resolveAsset={resolveAsset}
+          />
+          <TileMenu
+            selected={sel.ids.has(card.id)}
+            onSelect={() => setSel((s) => toggled(s, card.id))}
+            onDuplicate={() => void duplicate(card.id)}
+            onDelete={() => remove([card.id])}
+          />
+        </li>
+      )),
+    [cards, slugs, sel, order, selecting, resolveAsset, remove, duplicate],
+  )
 
   return (
     <main className="gallery">
@@ -126,39 +171,15 @@ export function Gallery() {
           )}
         </div>
       </header>
-      <div
-        className="gallery-scroll"
-        ref={scrollRef}
-        style={{ '--card-w': `${cardWidth}px` } as CSSProperties}
-      >
+      <div className="gallery-scroll" ref={scrollRef}>
         {cards.length === 0 ? (
           <div className="gallery-empty">No cards yet</div>
         ) : (
-          <ul className="gallery-grid">
-            {cards.map((card, i) => (
-              <li key={card.id} data-card-id={card.id}>
-                <GalleryTile
-                  card={card}
-                  slug={slugs[i]}
-                  selected={sel.ids.has(card.id)}
-                  onPick={(e) => {
-                    if (e.shiftKey) setSel((s) => extended(s, order, card.id))
-                    else if (e.ctrlKey || e.metaKey || selecting) setSel((s) => toggled(s, card.id))
-                    else return false
-                    return true
-                  }}
-                  scrollRef={scrollRef}
-                  resolveAsset={resolveAsset}
-                />
-                <TileMenu
-                  selected={sel.ids.has(card.id)}
-                  onSelect={() => setSel((s) => toggled(s, card.id))}
-                  onDuplicate={() => void duplicate(card.id)}
-                  onDelete={() => remove([card.id])}
-                />
-              </li>
-            ))}
-          </ul>
+          <CardScale value={cardWidth / CARD_WIDTH.max}>
+            <ul className="gallery-grid" style={{ '--card-w': `${cardWidth}px` } as CSSProperties}>
+              {tiles}
+            </ul>
+          </CardScale>
         )}
       </div>
     </main>
@@ -200,7 +221,11 @@ function GalleryTile({ card, slug, selected, onPick, scrollRef, resolveAsset }: 
       style={{ borderRadius: CARD_CORNER }}
       aria-label={card.name}
     >
-      {tile?.layout && <CardSvg layout={tile.layout} resolveAsset={resolveAsset} />}
+      {tile?.layout && (
+        <ScaledCard>
+          <CardSvg layout={tile.layout} resolveAsset={resolveAsset} />
+        </ScaledCard>
+      )}
       {tile?.error !== undefined && (
         <div className="gallery-broken">
           <span className="gallery-broken-name">{card.name}</span>
@@ -213,6 +238,22 @@ function GalleryTile({ card, slug, selected, onPick, scrollRef, resolveAsset }: 
         </span>
       )}
     </a>
+  )
+}
+
+/** a card laid out at the slider's widest and scaled down to the width
+ *  picked on it, so a new width changes nothing inside the card */
+function ScaledCard({ children }: { children: ReactNode }) {
+  const scale = useContext(CardScale)
+  return (
+    <div className="gallery-card">
+      <div
+        className="gallery-scaled"
+        style={{ width: CARD_WIDTH.max, transform: `scale(${scale})` }}
+      >
+        {children}
+      </div>
+    </div>
   )
 }
 
