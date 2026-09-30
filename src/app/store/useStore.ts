@@ -260,6 +260,9 @@ export const useStore = create<AppState>((set, get) => {
     if (next.length !== mine.length || next.some((c, i) => c !== mine[i])) {
       setCards(next, changes ? undefined : meta?.lastOpenCardId)
     }
+    // the text kept is unsaved while it differs from what storage has now
+    const kept = typing === undefined ? undefined : cards.get(typing)
+    if (kept && kept.yamlText !== savedText) set({ savedText: kept.yamlText })
     const dirty = meta?.dirtySinceExport ?? false
     if (meta && dirty !== get().dirtySinceExport) set({ dirtySinceExport: dirty })
 

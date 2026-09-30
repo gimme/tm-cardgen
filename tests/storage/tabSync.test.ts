@@ -120,6 +120,22 @@ it('the open card keeps text typed here and not yet saved, until its own save', 
   expect((await store.getCard('a'))?.yamlText).toBe('name: a\n# here\n')
 })
 
+it('text kept here is told from what storage has since, so typing undone back saves', async () => {
+  await open('a')
+  useStore.getState().updateText('name: a\n# here\n')
+  await store.write({ updateCards: [{ id: 'a', yamlText: 'name: a\n# there\n' }] })
+  await reload({ cards: ['a'] })
+  // typed into what storage has, it is saved
+  useStore.getState().updateText('name: a\n# there\n')
+  expect(saveState()).toBe('saved')
+
+  // the typing undone, back to the text before it
+  useStore.getState().updateText('name: a\n')
+  expect(saveState()).toBe('saving')
+  await useStore.getState().flushSave()
+  expect((await store.getCard('a'))?.yamlText).toBe('name: a\n')
+})
+
 it('the card opening after one with unsaved text is deleted takes outside edits', async () => {
   await open('a', 'b')
   useStore.getState().updateText('name: a\n# here\n')
