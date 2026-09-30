@@ -52,9 +52,6 @@ export interface ProjectStore {
   listArt(): Promise<StoredArt[]>
   getArt(name: string): Promise<StoredArt | undefined>
   getMeta(): Promise<ProjectMeta>
-  /** every card and image and the meta, read in one go, so that no write
-   *  lands between the parts */
-  readAll(): Promise<{ cards: StoredCard[]; art: StoredArt[]; meta: ProjectMeta }>
 
   /** every write, so that none is seen half done */
   write(batch: Batch): Promise<void>

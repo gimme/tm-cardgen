@@ -52,7 +52,6 @@ export function shared(store: ProjectStore, readBack: (changes: Changes) => void
     listArt: () => store.listArt(),
     getArt: (name) => store.getArt(name),
     getMeta: () => store.getMeta(),
-    readAll: () => store.readAll(),
 
     async write(batch) {
       await store.write(batch)

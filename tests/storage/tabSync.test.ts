@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto'
-import { beforeEach, expect, it } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
 import type { IdbProjectStore } from '../../src/app/storage/IdbProjectStore.ts'
 import { joinTabs, type Changes } from '../../src/app/storage/tabSync.ts'
 import { saveStateOf, useStore } from '../../src/app/store/useStore.ts'
@@ -216,6 +216,34 @@ it("an image that won't decode is left out, as if missing, and the rest is read"
   await reload()
   expect(art.files()).toEqual([])
   expect(useStore.getState().text).toBe('name: a\ncost: 4\n')
+})
+
+it('a save landing while a read decodes images is never taken back by that read', async () => {
+  await open('a')
+  await store.write({
+    putArt: [{ name: 'x.png', blob: png('x'), mime: 'image/png', size: 1, updatedAt: 1 }],
+  })
+  let decoded = () => {}
+  art.hold = new Promise((resolve) => (decoded = resolve))
+  // everything read, as on coming back into view, the image decoding
+  const reading = reload()
+  await vi.waitFor(() => expect(art.loaded).toEqual(['x.png']))
+
+  useStore.getState().updateText('name: a\n# here\n')
+  await useStore.getState().flushSave()
+  const texts: string[] = []
+  const unfollow = useStore.subscribe((s, prev) => {
+    if (s.text !== prev.text) texts.push(s.text)
+  })
+  try {
+    decoded()
+    await reading
+    await settled()
+    expect(texts).toEqual([])
+    expect(useStore.getState().text).toBe('name: a\n# here\n')
+  } finally {
+    unfollow()
+  }
 })
 
 it('typing while a save is stored leaves the newer text to save', async () => {

@@ -192,31 +192,20 @@ export const useStore = create<AppState>((set, get) => {
   /** What `changes` names, or everything, from storage into the state. An
    *  image stored anew loads before the cards and one gone goes after them,
    *  so no card here names an image the cache lacks along the way; one that
-   *  won't decode is left out, as if missing. */
+   *  won't decode is left out, as if missing. The cards and the meta are read
+   *  once the images have loaded: a save landing meanwhile has moved the state
+   *  on, and cards read from before it would take that back. */
   const readBack = async (changes: Changes | undefined) => {
     const { store, art } = getServices()
-    const cards = new Map<string, StoredCard | undefined>()
     const images = new Map<string, StoredArt | undefined>()
-    let meta: ProjectMeta | undefined
     if (changes) {
-      const ids = [...new Set(changes.cards)]
       const names = [...new Set(changes.art)]
-      const [storedCards, storedArt, storedMeta] = await Promise.all([
-        Promise.all(ids.map((id) => store.getCard(id))),
-        Promise.all(names.map((name) => store.getArt(name))),
-        changes.meta ? store.getMeta() : undefined,
-      ])
-      ids.forEach((id, i) => cards.set(id, storedCards[i]))
-      names.forEach((name, i) => images.set(name, storedArt[i]))
-      meta = storedMeta
+      const stored = await Promise.all(names.map((name) => store.getArt(name)))
+      names.forEach((name, i) => images.set(name, stored[i]))
     } else {
       // those here go, unless they are still stored
-      for (const c of get().cards) cards.set(c.id, undefined)
       for (const name of art.files()) images.set(name, undefined)
-      const all = await store.readAll()
-      for (const c of all.cards) cards.set(c.id, c)
-      for (const a of all.art) images.set(a.name, a)
-      meta = all.meta
+      for (const a of await store.listArt()) images.set(a.name, a)
     }
 
     let artChanged = false
@@ -233,6 +222,24 @@ export const useStore = create<AppState>((set, get) => {
           artChanged = true
         }
       }
+    }
+
+    const cards = new Map<string, StoredCard | undefined>()
+    let meta: ProjectMeta | undefined
+    if (changes) {
+      const ids = [...new Set(changes.cards)]
+      const [stored, storedMeta] = await Promise.all([
+        Promise.all(ids.map((id) => store.getCard(id))),
+        changes.meta ? store.getMeta() : undefined,
+      ])
+      ids.forEach((id, i) => cards.set(id, stored[i]))
+      meta = storedMeta
+    } else {
+      // those here go, unless they are still stored
+      for (const c of get().cards) cards.set(c.id, undefined)
+      const [stored, storedMeta] = await Promise.all([store.listCards(), store.getMeta()])
+      for (const c of stored) cards.set(c.id, c)
+      meta = storedMeta
     }
 
     const { cards: mine, currentId, text, savedText } = get()

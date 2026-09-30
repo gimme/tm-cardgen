@@ -87,24 +87,6 @@ describe('IdbProjectStore', () => {
     expect((await store.getMeta()).dirtySinceExport).toBeUndefined()
   })
 
-  it('reads everything at once', async () => {
-    const store = await IdbProjectStore.open('test-db-' + Math.random())
-    await store.write({
-      putCards: [{ id: 'a', name: 'A', yamlText: 'name: A', sortIndex: 1, updatedAt: 1 }],
-    })
-    await store.write({
-      putCards: [{ id: 'b', name: 'B', yamlText: 'name: B', sortIndex: 0, updatedAt: 1 }],
-    })
-    const blob = new Blob([new Uint8Array([1])], { type: 'image/png' })
-    await store.write({ putArt: [{ name: 'x.png', blob, mime: 'image/png', size: 1 }] })
-    await store.write({ meta: { dirtySinceExport: true } })
-
-    const all = await store.readAll()
-    expect(all.cards.map((c) => c.id)).toEqual(['b', 'a'])
-    expect(all.art.map((a) => a.name)).toEqual(['x.png'])
-    expect(all.meta).toMatchObject({ schemaVersion: 1, dirtySinceExport: true })
-  })
-
   it('makes way for a newer version opened in another tab, once the app is done', async () => {
     const name = 'test-db-' + Math.random()
     let asked = () => {}

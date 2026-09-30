@@ -13,6 +13,8 @@ import { testFonts } from './fonts.ts'
  *  file it loads */
 export class TestArtCache extends ArtCache {
   loaded: string[] = []
+  /** while set, each decode waits for it */
+  hold?: Promise<void>
 
   override setBlob(file: string, blob: Blob, version?: number): Promise<void> {
     if (!decodes(blob)) return Promise.reject(new Error('could not decode image'))
@@ -24,8 +26,9 @@ export class TestArtCache extends ArtCache {
     return Promise.resolve(decodes(blob))
   }
 
-  protected override decode() {
-    return Promise.resolve({ w: 1, h: 1 })
+  protected override async decode() {
+    await this.hold
+    return { w: 1, h: 1 }
   }
 }
 

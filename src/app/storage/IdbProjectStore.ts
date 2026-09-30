@@ -67,20 +67,6 @@ export class IdbProjectStore implements ProjectStore {
     return (await this.db.get('meta', 'meta')) ?? { ...DEFAULT_META }
   }
 
-  async readAll() {
-    const tx = this.db.transaction(['cards', 'art', 'meta'])
-    const [cards, art, meta] = await Promise.all([
-      tx.objectStore('cards').getAll(),
-      tx.objectStore('art').getAll(),
-      tx.objectStore('meta').get('meta'),
-    ])
-    return {
-      cards: cards.sort((a, b) => a.sortIndex - b.sortIndex),
-      art,
-      meta: meta ?? { ...DEFAULT_META },
-    }
-  }
-
   async write(batch: Batch): Promise<void> {
     const tx = this.db.transaction(['cards', 'art', 'meta'], 'readwrite')
     const cards = tx.objectStore('cards')
