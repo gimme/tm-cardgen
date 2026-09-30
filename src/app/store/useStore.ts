@@ -82,11 +82,12 @@ export interface AppState {
   markExported(): Promise<void>
 
   /** A file already stored under its name is nothing new when the image is the
-   *  same, and replaces it only if `confirmReplace`, given those names, says so. */
+   *  same, and replaces it only if `confirmReplace`, given those names, says so.
+   *  One the browser can't decode is refused: returns their names. */
   importArt(
     files: { name: string; blob: Blob }[],
     confirmReplace: (names: string[]) => boolean,
-  ): Promise<void>
+  ): Promise<string[]>
   deleteArt(name: string): Promise<void>
   /** the cards naming the file follow it; a name already taken is refused */
   renameArt(from: string, to: string): Promise<void>
@@ -409,17 +410,22 @@ export const useStore = create<AppState>((set, get) => {
     },
 
     async importArt(files, confirmReplace) {
-      const { store } = getServices()
+      const { store, art } = getServices()
       const fresh: typeof files = []
       const replacing: typeof files = []
+      const refused: string[] = []
       for (const file of files) {
+        if (!(await art.decodes(file.blob))) {
+          refused.push(file.name)
+          continue
+        }
         const stored = await store.getArt(file.name)
         if (!stored) fresh.push(file)
         else if (!(await sameBytes(stored.blob, file.blob))) replacing.push(file)
       }
       const replace = replacing.length > 0 && confirmReplace(replacing.map((f) => f.name))
       const storing = replace ? [...fresh, ...replacing] : fresh
-      if (storing.length === 0) return
+      if (storing.length === 0) return refused
       const updatedAt = Date.now()
       await store.write({
         putArt: storing.map(({ name, blob }) => ({
@@ -430,6 +436,7 @@ export const useStore = create<AppState>((set, get) => {
           updatedAt,
         })),
       })
+      return refused
     },
 
     async deleteArt(name) {

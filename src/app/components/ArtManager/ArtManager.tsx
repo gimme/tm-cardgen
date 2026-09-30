@@ -30,7 +30,14 @@ export function ArtManager() {
           ? `${names[0]} already exists. Replace it with the new image?`
           : `${names.join(', ')} already exist. Replace them with the new images?`,
       ),
-    )
+    ).then((refused) => {
+      if (refused.length === 0) return
+      alert(
+        refused.length === 1
+          ? `${refused[0]} isn't an image this browser can show, so it wasn't added.`
+          : `${refused.join(', ')} aren't images this browser can show, so they weren't added.`,
+      )
+    })
 
   /** "used by 2 cards", naming them on hover */
   const usedBy = (name: string) => {

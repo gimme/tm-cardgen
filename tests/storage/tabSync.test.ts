@@ -24,6 +24,7 @@ const card = (id: string) => useStore.getState().cards.find((c) => c.id === id)
 const ids = () => useStore.getState().cards.map((c) => c.id)
 const reload = (changes?: Changes) => useStore.getState().reloadFromStore(changes)
 const png = (text: string) => new Blob([text], { type: 'image/png' })
+const heic = (text: string) => new Blob([text], { type: 'image/heic' })
 const saveState = () => saveStateOf(useStore.getState())
 
 beforeEach(() => useStore.setState(fresh, true))
@@ -204,14 +205,13 @@ it("an image that won't decode is left out, as if missing, and the rest is read"
   await reload()
   expect(art.files()).toEqual(['x.png'])
 
-  art.broken.add('x.png')
+  // a HEIC under the old name, and one of its own
   await store.write({
-    putArt: [{ name: 'x.png', blob: png('y'), mime: 'image/png', size: 1, updatedAt: 2 }],
+    putArt: [
+      { name: 'x.png', blob: heic('y'), mime: 'image/heic', size: 1, updatedAt: 2 },
+      { name: 'z.heic', blob: heic('z'), mime: 'image/heic', size: 1, updatedAt: 2 },
+    ],
   })
-  await store.write({
-    putArt: [{ name: 'z.heic', blob: png('z'), mime: 'image/heic', size: 1, updatedAt: 2 }],
-  })
-  art.broken.add('z.heic')
   await store.write({ updateCards: [{ id: 'a', yamlText: 'name: a\ncost: 4\n' }] })
   await reload()
   expect(art.files()).toEqual([])

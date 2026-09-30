@@ -62,6 +62,19 @@ export class ArtCache {
     }
   }
 
+  /** whether the browser can show `blob` as an image */
+  async decodes(blob: Blob): Promise<boolean> {
+    const url = URL.createObjectURL(blob)
+    try {
+      await this.decode(url)
+      return true
+    } catch {
+      return false
+    } finally {
+      URL.revokeObjectURL(url)
+    }
+  }
+
   remove(file: string): void {
     const old = this.entries.get(file)
     if (old) {
