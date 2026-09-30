@@ -56,6 +56,9 @@ export interface AppState {
   dirtySinceExport: boolean
   /** the cards the last delete took, until it is undone or dismissed */
   deleted?: CardEntry[]
+  /** another tab runs another version of the app: this one waits for that
+   *  older one to close before it starts, or has closed for that newer one */
+  versionClash?: 'waiting' | 'outdated'
 
   selectCard(id: string): void
   updateText(text: string): void

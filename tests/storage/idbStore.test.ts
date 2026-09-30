@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto'
+import { openDB } from 'idb'
 import { describe, expect, it } from 'vitest'
 import { IdbProjectStore } from '../../src/app/storage/IdbProjectStore.ts'
 import type { StoredCard } from '../../src/app/storage/ProjectStore.ts'
@@ -102,5 +103,33 @@ describe('IdbProjectStore', () => {
     expect(all.cards.map((c) => c.id)).toEqual(['b', 'a'])
     expect(all.art.map((a) => a.name)).toEqual(['x.png'])
     expect(all.meta).toMatchObject({ schemaVersion: 1, dirtySinceExport: true })
+  })
+
+  it('makes way for a newer version opened in another tab, once the app is done', async () => {
+    const name = 'test-db-' + Math.random()
+    let asked = () => {}
+    const outdated = new Promise<void>((resolve) => (asked = resolve))
+    let done = () => {}
+    await IdbProjectStore.open(name, {
+      outdated() {
+        asked()
+        return new Promise<void>((resolve) => (done = resolve))
+      },
+    })
+
+    let upgraded = false
+    const newer = openDB(name, 2).then((db) => {
+      upgraded = true
+      return db
+    })
+    await outdated
+    // held up until the app is done
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(upgraded).toBe(false)
+
+    done()
+    const db = await newer
+    expect(db.version).toBe(2)
+    db.close()
   })
 })

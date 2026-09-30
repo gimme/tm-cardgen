@@ -9,7 +9,20 @@ import { setServices } from './store/services.ts'
 import { useStore } from './store/useStore.ts'
 
 export async function initApp(): Promise<void> {
-  const [fonts, idb] = await Promise.all([loadFonts(), IdbProjectStore.open()])
+  let leaveTabs = () => {}
+  const [fonts, idb] = await Promise.all([
+    loadFonts(),
+    IdbProjectStore.open(undefined, {
+      blocked: () => useStore.setState({ versionClash: 'waiting' }),
+      // what's typed is saved before this tab makes way for the newer one
+      async outdated() {
+        leaveTabs()
+        await useStore.getState().flushSave()
+        useStore.setState({ versionClash: 'outdated' })
+      },
+    }),
+  ])
+  if (useStore.getState().versionClash === 'waiting') useStore.setState({ versionClash: undefined })
   await seedSamples(idb)
 
   // ask the browser not to evict storage
@@ -24,11 +37,13 @@ export async function initApp(): Promise<void> {
 
   // joined before the first read, which the other tabs' writes then wait
   // behind, so that none landing after it goes unread
-  joinTabs(readBack)
+  leaveTabs = joinTabs(readBack)
   await useStore.getState().reloadFromStore()
   // read again on coming back into view or out of the back-forward cache, for
   // any write this tab missed while the browser froze it
-  const catchUp = () => void useStore.getState().reloadFromStore()
+  const catchUp = () => {
+    if (useStore.getState().versionClash !== 'outdated') void useStore.getState().reloadFromStore()
+  }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') catchUp()
   })
