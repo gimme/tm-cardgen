@@ -34,7 +34,13 @@ export async function seedSamples(store: ProjectStore, force = false): Promise<v
     const res = await fetch(sampleArtUrl(file))
     if (!res.ok) continue
     const blob = await res.blob()
-    await store.putArt({ name: file, blob, mime: blob.type, size: blob.size })
+    await store.putArt({
+      name: file,
+      blob,
+      mime: blob.type,
+      size: blob.size,
+      updatedAt: Date.now(),
+    })
   }
 
   if (meta.seededAt === undefined) await store.setMeta({ seededAt: Date.now() })

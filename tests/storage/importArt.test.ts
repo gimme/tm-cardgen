@@ -1,26 +1,12 @@
 import 'fake-indexeddb/auto'
 import { expect, it } from 'vitest'
-import { ArtCache } from '../../src/app/services/artCache.ts'
-import { IdbProjectStore } from '../../src/app/storage/IdbProjectStore.ts'
-import { setServices } from '../../src/app/store/services.ts'
 import { useStore } from '../../src/app/store/useStore.ts'
-import { testFonts } from '../helpers/fonts.ts'
-
-/** decoding needs a DOM; what reaches the cache is all these tests look at */
-class RecordingCache extends ArtCache {
-  set: string[] = []
-  override setBlob(file: string): Promise<void> {
-    this.set.push(file)
-    return Promise.resolve()
-  }
-}
+import { openApp, settled } from '../helpers/app.ts'
 
 const png = (text: string) => new Blob([text], { type: 'image/png' })
 
 it('a same-name upload replaces a stored image only on a yes, and the same image never asks', async () => {
-  const store = await IdbProjectStore.open('test-db-' + Math.random())
-  const art = new RecordingCache()
-  setServices({ fonts: testFonts(), art, store })
+  const { store, art } = await openApp()
   const asked: string[][] = []
   const answer = (yes: boolean) => (names: string[]) => {
     asked.push(names)
@@ -35,7 +21,8 @@ it('a same-name upload replaces a stored image only on a yes, and the same image
   expect(await stored('dust.png')).toBe('dust')
 
   // the same image again is nothing new; a no keeps the old image but lets the rest in
-  art.set = []
+  await settled()
+  art.loaded = []
   await importArt(
     [
       { name: 'dust.png', blob: png('dust') },
@@ -44,7 +31,8 @@ it('a same-name upload replaces a stored image only on a yes, and the same image
     answer(false),
   )
   expect(asked).toEqual([])
-  expect(art.set).toEqual(['sky.png'])
+  await settled()
+  expect(art.loaded).toEqual(['sky.png'])
 
   await importArt(
     [

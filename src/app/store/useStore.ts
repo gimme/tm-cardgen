@@ -8,8 +8,14 @@ import {
   type Diagnostic,
 } from '../../core/index.ts'
 import { NEW_CARD_TEMPLATE } from '../samples/index.ts'
-import { nextSortIndex, type StoredCard } from '../storage/ProjectStore.ts'
+import {
+  nextSortIndex,
+  type ProjectMeta,
+  type StoredArt,
+  type StoredCard,
+} from '../storage/ProjectStore.ts'
 import { seedSamples } from '../storage/seed.ts'
+import type { Changes } from '../storage/tabSync.ts'
 import { copyName, extractName, withName } from './cardName.ts'
 import { getServices, layoutContext } from './services.ts'
 
@@ -26,10 +32,9 @@ export interface AppState {
   /** in display order: every change keeps them sorted by sortIndex */
   cards: CardEntry[]
   currentId?: string
-  /** editor text of the current card (authoritative while editing) */
+  /** editor text of the current card (authoritative while editing); the
+   *  editor follows it where it changes from outside, by another tab say */
   text: string
-  /** bumps when `text` is replaced from outside the editor, so the editor rebuilds */
-  textEpoch: number
   /** last successfully laid-out card (never blanks mid-keystroke) */
   layout?: CardLayout
   /** true while the text no longer produces a valid layout */
@@ -61,9 +66,11 @@ export interface AppState {
   dismissDeleted(): void
   moveCard(id: string, toIndex: number): Promise<void>
   restoreSamples(): Promise<void>
-  /** cards and the dirty flag from the store; keeps the current card, else
-   *  opens the last one open or the first */
-  reloadFromStore(): Promise<void>
+  /** Storage read back into the state and the art cache: what `changes`
+   *  names, or everything. The current card keeps text typed here and not yet
+   *  saved; with it gone, the last one open or the first opens. One read at a
+   *  time, in order: those asked for while one runs wait for it, as one. */
+  reloadFromStore(changes?: Changes): Promise<void>
   /** the project was just backed up */
   markExported(): Promise<void>
 
@@ -87,12 +94,31 @@ const AUTOSAVE_DELAY = 500
 let recomputeTimer: ReturnType<typeof setTimeout> | undefined
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 
+// the last read of storage asked for, and the one waiting to start
+let reading: Promise<void> = Promise.resolve()
+let waiting: { changes?: Changes; done: Promise<void> } | undefined
+
 const toEntry = ({ id, name, yamlText, sortIndex }: StoredCard): CardEntry => ({
   id,
   name,
   yamlText,
   sortIndex,
 })
+
+const sameCard = (a: CardEntry, b: CardEntry) =>
+  a.name === b.name && a.yamlText === b.yamlText && a.sortIndex === b.sortIndex
+
+const bySortIndex = (a: CardEntry, b: CardEntry) => a.sortIndex - b.sortIndex
+
+/** two reads' changes as one; everything, as no changes, takes in the other */
+const merged = (a?: Changes, b?: Changes): Changes | undefined =>
+  a && b
+    ? {
+        cards: [...(a.cards ?? []), ...(b.cards ?? [])],
+        art: [...(a.art ?? []), ...(b.art ?? [])],
+        meta: a.meta || b.meta,
+      }
+    : undefined
 
 async function sameBytes(a: Blob, b: Blob): Promise<boolean> {
   if (a.size !== b.size) return false
@@ -103,15 +129,14 @@ async function sameBytes(a: Blob, b: Blob): Promise<boolean> {
 
 export const useStore = create<AppState>((set, get) => {
   const addCard = async (name: string, yamlText: string) => {
-    const { cards } = get()
     const entry: CardEntry = {
       id: `card-${crypto.randomUUID()}`,
       name,
       yamlText,
-      sortIndex: nextSortIndex(cards),
+      sortIndex: nextSortIndex(get().cards),
     }
     await getServices().store.putCard({ ...entry, updatedAt: Date.now() })
-    set({ cards: [...cards, entry] })
+    withCards([entry])
     get().selectCard(entry.id)
   }
 
@@ -121,11 +146,106 @@ export const useStore = create<AppState>((set, get) => {
     else set({ currentId: undefined, text: '', layout: undefined, stale: false })
   }
 
+  /** `cards` for the list, the editor's text following the current card's,
+   *  which lays out again after the same pause as typing. With the current
+   *  card gone, `open` opens where it is among them, or else the first */
+  const setCards = (cards: CardEntry[], open?: string) => {
+    const { currentId, text } = get()
+    const current = cards.find((c) => c.id === currentId)
+    if (current && current.yamlText !== text) {
+      set({ cards, text: current.yamlText })
+      clearTimeout(recomputeTimer)
+      recomputeTimer = setTimeout(() => get().recompute(), RECOMPUTE_DELAY)
+    } else {
+      set({ cards })
+    }
+    if (!current) show((cards.find((c) => c.id === open) ?? cards[0])?.id)
+  }
+
+  /** cards added, or changed, by id */
+  const withCards = (changed: CardEntry[]) => {
+    if (changed.length === 0) return
+    const byId = new Map(get().cards.map((c) => [c.id, c]))
+    for (const c of changed) byId.set(c.id, c)
+    setCards([...byId.values()].sort(bySortIndex))
+  }
+
+  const dropCards = (ids: readonly string[]) => {
+    const { cards } = get()
+    const remaining = cards.filter((c) => !ids.includes(c.id))
+    if (remaining.length !== cards.length) setCards(remaining)
+  }
+
+  /** What `changes` names, or everything, from storage into the state. An
+   *  image stored anew loads before the cards and one gone goes after them,
+   *  so no card here names an image the cache lacks along the way. */
+  const readBack = async (changes: Changes | undefined) => {
+    const { store, art } = getServices()
+    const cards = new Map<string, StoredCard | undefined>()
+    const images = new Map<string, StoredArt | undefined>()
+    let meta: ProjectMeta | undefined
+    if (changes) {
+      const ids = [...new Set(changes.cards)]
+      const names = [...new Set(changes.art)]
+      const [storedCards, storedArt, storedMeta] = await Promise.all([
+        Promise.all(ids.map((id) => store.getCard(id))),
+        Promise.all(names.map((name) => store.getArt(name))),
+        changes.meta ? store.getMeta() : undefined,
+      ])
+      ids.forEach((id, i) => cards.set(id, storedCards[i]))
+      names.forEach((name, i) => images.set(name, storedArt[i]))
+      meta = storedMeta
+    } else {
+      // those here go, unless they are still stored
+      for (const c of get().cards) cards.set(c.id, undefined)
+      for (const name of art.files()) images.set(name, undefined)
+      const all = await store.readAll()
+      for (const c of all.cards) cards.set(c.id, c)
+      for (const a of all.art) images.set(a.name, a)
+      meta = all.meta
+    }
+
+    let artChanged = false
+    for (const [name, stored] of images) {
+      const cached = art.entry(name)
+      if (!stored || (cached && cached.version === stored.updatedAt)) continue
+      await art.setBlob(name, stored.blob, stored.updatedAt)
+      artChanged = true
+    }
+
+    const { cards: mine, currentId, saveState } = get()
+    // text typed into the current card and not yet saved stays
+    const typing = saveState === 'saved' ? undefined : currentId
+    const byId = new Map(mine.map((c) => [c.id, c]))
+    for (const [id, stored] of cards) {
+      const here = byId.get(id)
+      if (!stored) {
+        byId.delete(id)
+        continue
+      }
+      const entry =
+        id === typing && here ? { ...here, sortIndex: stored.sortIndex } : toEntry(stored)
+      if (!here || !sameCard(here, entry)) byId.set(id, entry)
+    }
+    const next = [...byId.values()].sort(bySortIndex)
+    if (next.length !== mine.length || next.some((c, i) => c !== mine[i])) {
+      setCards(next, changes ? undefined : meta?.lastOpenCardId)
+    }
+    const dirty = meta?.dirtySinceExport ?? false
+    if (meta && dirty !== get().dirtySinceExport) set({ dirtySinceExport: dirty })
+
+    for (const [name, stored] of images) {
+      if (stored || !art.entry(name)) continue
+      art.remove(name)
+      artChanged = true
+    }
+    if (artChanged) set((s) => ({ artVersion: s.artVersion + 1 }))
+  }
+
   return {
     status: 'loading',
     cards: [],
     text: '',
-    textEpoch: 0,
     stale: false,
     diagnostics: [],
     saveState: 'saved',
@@ -163,14 +283,18 @@ export const useStore = create<AppState>((set, get) => {
 
     async flushSave() {
       clearTimeout(saveTimer)
-      const { currentId, cards, saveState } = get()
+      const { currentId, cards, saveState, dirtySinceExport } = get()
       if (currentId === undefined || saveState === 'saved') return
       const card = cards.find((c) => c.id === currentId)
       if (!card) return
+      const { id, name, yamlText } = card
+      const { store } = getServices()
       try {
-        await getServices().store.putCard({ ...card, updatedAt: Date.now() })
-        await getServices().store.setMeta({ dirtySinceExport: true })
-        set({ saveState: 'saved', dirtySinceExport: true })
+        await store.updateCards([{ id, name, yamlText, updatedAt: Date.now() }])
+        if (!dirtySinceExport) await store.setMeta({ dirtySinceExport: true })
+        // typing while it was stored leaves that still to save
+        const saved = get().cards.find((c) => c.id === id)?.yamlText === yamlText
+        set(saved ? { saveState: 'saved', dirtySinceExport: true } : { dirtySinceExport: true })
       } catch {
         set({ saveState: 'error' })
       }
@@ -201,14 +325,12 @@ export const useStore = create<AppState>((set, get) => {
     },
 
     async deleteCards(ids) {
-      const { cards, currentId } = get()
-      const gone = cards.filter((c) => ids.includes(c.id))
+      const gone = get().cards.filter((c) => ids.includes(c.id))
       if (gone.length === 0) return
       const { store } = getServices()
       for (const c of gone) await store.deleteCard(c.id)
-      const remaining = cards.filter((c) => !ids.includes(c.id))
-      set({ cards: remaining, deleted: gone })
-      if (currentId !== undefined && ids.includes(currentId)) show(remaining[0]?.id)
+      set({ deleted: gone })
+      dropCards(ids)
     },
 
     async undoDelete() {
@@ -216,10 +338,8 @@ export const useStore = create<AppState>((set, get) => {
       if (!deleted) return
       const { store } = getServices()
       for (const c of deleted) await store.putCard({ ...c, updatedAt: Date.now() })
-      set((s) => ({
-        deleted: undefined,
-        cards: [...s.cards, ...deleted].sort((a, b) => a.sortIndex - b.sortIndex),
-      }))
+      set({ deleted: undefined })
+      withCards(deleted)
     },
 
     dismissDeleted() {
@@ -232,10 +352,13 @@ export const useStore = create<AppState>((set, get) => {
       if (fromIndex === -1) return
       const [moved] = cards.splice(fromIndex, 1)
       cards.splice(Math.max(0, Math.min(toIndex, cards.length)), 0, moved)
-      const renumbered = cards.map((c, i) => ({ ...c, sortIndex: i }))
+      const renumbered = cards.map((c, i) => (c.sortIndex === i ? c : { ...c, sortIndex: i }))
       set({ cards: renumbered })
-      const { store } = getServices()
-      for (const c of renumbered) await store.putCard({ ...c, updatedAt: Date.now() })
+      // the order alone: the text is as stored, or the editor's to save
+      const changed = renumbered.filter((c, i) => c !== cards[i])
+      await getServices().store.updateCards(
+        changed.map((c) => ({ id: c.id, sortIndex: c.sortIndex })),
+      )
     },
 
     async restoreSamples() {
@@ -243,22 +366,20 @@ export const useStore = create<AppState>((set, get) => {
       await get().reloadFromStore()
     },
 
-    async reloadFromStore() {
-      const { store } = getServices()
-      const [stored, meta] = await Promise.all([store.listCards(), store.getMeta()])
-      const cards = stored.map(toEntry)
-      set((s) => ({
-        cards,
-        dirtySinceExport: meta.dirtySinceExport ?? false,
-        artVersion: s.artVersion + 1,
-      }))
-      const { currentId } = get()
-      if (currentId !== undefined && cards.some((c) => c.id === currentId)) {
-        get().recompute()
-        return
+    reloadFromStore(changes) {
+      if (waiting) {
+        waiting.changes = merged(waiting.changes, changes)
+        return waiting.done
       }
-      const lastOpen = cards.find((c) => c.id === meta.lastOpenCardId)
-      show((lastOpen ?? cards[0])?.id)
+      const next: { changes?: Changes; done: Promise<void> } = { changes, done: reading }
+      next.done = reading.then(() => {
+        waiting = undefined
+        return readBack(next.changes)
+      })
+      waiting = next
+      // the read after waits for this one, whether or not it fails
+      reading = next.done.catch(() => {})
+      return next.done
     },
 
     async markExported() {
@@ -267,7 +388,7 @@ export const useStore = create<AppState>((set, get) => {
     },
 
     async importArt(files, confirmReplace) {
-      const { store, art } = getServices()
+      const { store } = getServices()
       const fresh: typeof files = []
       const replacing: typeof files = []
       for (const file of files) {
@@ -277,41 +398,33 @@ export const useStore = create<AppState>((set, get) => {
       }
       const replace = replacing.length > 0 && confirmReplace(replacing.map((f) => f.name))
       for (const { name, blob } of replace ? [...fresh, ...replacing] : fresh) {
-        await store.putArt({ name, blob, mime: blob.type, size: blob.size })
-        await art.setBlob(name, blob)
+        const updatedAt = Date.now()
+        await store.putArt({ name, blob, mime: blob.type, size: blob.size, updatedAt })
       }
-      set((s) => ({ artVersion: s.artVersion + 1 }))
     },
 
     async deleteArt(name) {
-      const { store, art } = getServices()
-      await store.deleteArt(name)
-      art.remove(name)
-      set((s) => ({ artVersion: s.artVersion + 1 }))
+      await getServices().store.deleteArt(name)
     },
 
     async renameArt(from, to) {
-      const { store, art } = getServices()
+      const { store } = getServices()
       const stored = await store.getArt(from)
       // never onto another file: that would replace its image
       if (!stored || (await store.getArt(to))) return
+      // stored under the new name before a card names it, and gone from the
+      // old one once none does, for whatever reads storage in between
       await store.putArt({ ...stored, name: to })
-      await store.deleteArt(from)
       const renamed = get()
         .cards.filter((c) => artFileOf(c.yamlText) === from)
         .map((c) => ({ ...c, yamlText: withArtFile(c.yamlText, to) }))
-      for (const c of renamed) await store.putCard({ ...c, updatedAt: Date.now() })
+      await store.updateCards(
+        renamed.map(({ id, yamlText }) => ({ id, yamlText, updatedAt: Date.now() })),
+      )
+      await store.deleteArt(from)
       if (renamed.length > 0) await store.setMeta({ dirtySinceExport: true })
-      const current = renamed.find((c) => c.id === get().currentId)
-      set((s) => ({
-        cards: s.cards.map((c) => renamed.find((r) => r.id === c.id) ?? c),
-        text: current?.yamlText ?? s.text,
-        textEpoch: s.textEpoch + (current ? 1 : 0),
-        dirtySinceExport: s.dirtySinceExport || renamed.length > 0,
-        artVersion: s.artVersion + 1,
-      }))
-      // notifies, and the current card lays out again under the new name
-      art.rename(from, to)
+      withCards(renamed)
+      set((s) => ({ dirtySinceExport: s.dirtySinceExport || renamed.length > 0 }))
     },
 
     setPage(page) {

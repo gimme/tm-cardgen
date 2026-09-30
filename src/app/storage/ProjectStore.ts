@@ -14,7 +14,13 @@ export interface StoredArt {
   blob: Blob
   mime: string
   size: number
+  /** when this image was stored, telling it from another stored under the
+   *  same name before or since; missing on images stored before it was kept */
+  updatedAt?: number
 }
+
+/** some of a stored card's fields, by its id */
+export type CardPatch = Pick<StoredCard, 'id'> & Partial<Omit<StoredCard, 'id'>>
 
 export interface ProjectMeta {
   schemaVersion: number
@@ -29,6 +35,9 @@ export interface ProjectStore {
   listCards(): Promise<StoredCard[]>
   getCard(id: string): Promise<StoredCard | undefined>
   putCard(card: StoredCard): Promise<void>
+  /** the fields given changed on each card, in one go; a card no longer
+   *  there is left out */
+  updateCards(patches: CardPatch[]): Promise<void>
   deleteCard(id: string): Promise<void>
 
   listArt(): Promise<StoredArt[]>
@@ -38,6 +47,10 @@ export interface ProjectStore {
 
   getMeta(): Promise<ProjectMeta>
   setMeta(patch: Partial<ProjectMeta>): Promise<void>
+
+  /** every card and image and the meta, read in one go, so that no write
+   *  lands between the parts */
+  readAll(): Promise<{ cards: StoredCard[]; art: StoredArt[]; meta: ProjectMeta }>
 }
 
 export const DEFAULT_META: ProjectMeta = { schemaVersion: 1 }

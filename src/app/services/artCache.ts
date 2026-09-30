@@ -11,6 +11,8 @@ export interface ArtEntry {
   /** brightness thumbnail; absent where the image could not be rasterized,
    *  and the credit then stays white */
   luma?: LumaMap
+  /** the stored image's updatedAt, telling whether storage has since changed */
+  version?: number
 }
 
 /** longest side of the brightness thumbnail */
@@ -46,13 +48,13 @@ export class ArtCache {
     return [...this.entries.keys()].sort()
   }
 
-  async setBlob(file: string, blob: Blob): Promise<void> {
+  async setBlob(file: string, blob: Blob, version?: number): Promise<void> {
     const url = URL.createObjectURL(blob)
     try {
-      const { w, h, luma } = await decode(url)
+      const { w, h, luma } = await this.decode(url)
       const old = this.entries.get(file)
       if (old) URL.revokeObjectURL(old.url)
-      this.entries.set(file, { url, w, h, bytes: blob.size, luma })
+      this.entries.set(file, { url, w, h, bytes: blob.size, luma, version })
       this.notify()
     } catch (err) {
       URL.revokeObjectURL(url)
@@ -69,15 +71,6 @@ export class ArtCache {
     }
   }
 
-  rename(from: string, to: string): void {
-    const e = this.entries.get(from)
-    if (e) {
-      this.entries.delete(from)
-      this.entries.set(to, e)
-      this.notify()
-    }
-  }
-
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
@@ -85,6 +78,11 @@ export class ArtCache {
 
   private notify() {
     for (const l of this.listeners) l()
+  }
+
+  /** the image's size and brightness, which takes a DOM to find */
+  protected decode(url: string): Promise<{ w: number; h: number; luma?: LumaMap }> {
+    return decode(url)
   }
 }
 

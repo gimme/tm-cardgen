@@ -2,7 +2,7 @@ import { acceptCompletion, autocompletion } from '@codemirror/autocomplete'
 import { redo } from '@codemirror/commands'
 import { yaml, yamlLanguage } from '@codemirror/lang-yaml'
 import { lintGutter } from '@codemirror/lint'
-import { EditorState } from '@codemirror/state'
+import { EditorState, Transaction } from '@codemirror/state'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { EditorView, keymap } from '@codemirror/view'
 import { basicSetup } from 'codemirror'
@@ -63,13 +63,34 @@ export function makeEditorState(text: string, onChange: (text: string) => void):
         addToOptions: [optionIcons],
       }),
       optionIconTheme,
+      // text put in from outside by replaceText is the store's already
       EditorView.updateListener.of((update) => {
-        if (update.docChanged) onChange(update.state.doc.toString())
+        if (!update.docChanged) return
+        if (update.transactions.some((tr) => tr.annotation(Transaction.remote))) return
+        onChange(update.state.doc.toString())
       }),
       EditorView.theme({
         '&': { height: '100%', fontSize: '13px' },
         '.cm-scroller': { fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace" },
       }),
     ],
+  })
+}
+
+/** the editor onto `text` changed from outside it, by another tab say: only
+ *  the part between what the two share at either end is replaced, so the
+ *  cursor stays with the text around it; Undo leaves it, and the editor's
+ *  onChange doesn't hear of it */
+export function replaceText(view: EditorView, text: string): void {
+  const doc = view.state.doc.toString()
+  if (doc === text) return
+  const shorter = Math.min(doc.length, text.length)
+  let from = 0
+  while (from < shorter && doc[from] === text[from]) from++
+  let end = 0
+  while (end < shorter - from && doc[doc.length - 1 - end] === text[text.length - 1 - end]) end++
+  view.dispatch({
+    changes: { from, to: doc.length - end, insert: text.slice(from, text.length - end) },
+    annotations: [Transaction.remote.of(true), Transaction.addToHistory.of(false)],
   })
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { EditorView } from '@codemirror/view'
-import { makeEditorState } from '../../editor/cmSetup.ts'
+import { makeEditorState, replaceText } from '../../editor/cmSetup.ts'
 import { useStore } from '../../store/useStore.ts'
 import { SyntaxSheet } from './SyntaxSheet.tsx'
 
@@ -25,7 +25,6 @@ function rememberSheetSeen() {
 
 export function EditorPane() {
   const currentId = useStore((s) => s.currentId)
-  const textEpoch = useStore((s) => s.textEpoch)
   const diagnostics = useStore((s) => s.diagnostics)
   const saveState = useStore((s) => s.saveState)
   const hostRef = useRef<HTMLDivElement>(null)
@@ -48,8 +47,16 @@ export function EditorPane() {
       ),
       parent: hostRef.current,
     })
-    return () => view.destroy()
-  }, [currentId, textEpoch])
+    // the card's text changed from outside the editor, by another tab or an
+    // art file's new name, goes into it as an edit
+    const unfollow = useStore.subscribe((s, prev) => {
+      if (s.currentId === currentId && s.text !== prev.text) replaceText(view, s.text)
+    })
+    return () => {
+      unfollow()
+      view.destroy()
+    }
+  }, [currentId])
 
   const errors = diagnostics.filter((d) => d.severity === 'error').length
   const warnings = diagnostics.filter((d) => d.severity === 'warning').length

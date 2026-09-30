@@ -1,6 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import {
   DEFAULT_META,
+  type CardPatch,
   type ProjectMeta,
   type ProjectStore,
   type StoredArt,
@@ -44,6 +45,15 @@ export class IdbProjectStore implements ProjectStore {
     await this.db.put('cards', card)
   }
 
+  async updateCards(patches: CardPatch[]): Promise<void> {
+    const tx = this.db.transaction('cards', 'readwrite')
+    for (const patch of patches) {
+      const stored = await tx.store.get(patch.id)
+      if (stored) await tx.store.put({ ...stored, ...patch })
+    }
+    await tx.done
+  }
+
   async deleteCard(id: string): Promise<void> {
     await this.db.delete('cards', id)
   }
@@ -71,5 +81,19 @@ export class IdbProjectStore implements ProjectStore {
   async setMeta(patch: Partial<ProjectMeta>): Promise<void> {
     const current = await this.getMeta()
     await this.db.put('meta', { ...current, ...patch }, 'meta')
+  }
+
+  async readAll() {
+    const tx = this.db.transaction(['cards', 'art', 'meta'])
+    const [cards, art, meta] = await Promise.all([
+      tx.objectStore('cards').getAll(),
+      tx.objectStore('art').getAll(),
+      tx.objectStore('meta').get('meta'),
+    ])
+    return {
+      cards: cards.sort((a, b) => a.sortIndex - b.sortIndex),
+      art,
+      meta: meta ?? { ...DEFAULT_META },
+    }
   }
 }

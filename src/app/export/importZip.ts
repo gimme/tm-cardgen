@@ -64,16 +64,14 @@ export async function previewImport(file: File | Blob): Promise<ImportPreview> {
 export type ImportMode = 'merge' | 'replace'
 
 /** Apply a previewed import. `merge` adds everything as new cards (same-name
- *  art overwrites); `replace` clears the project first. */
+ *  art overwrites); `replace` clears the project first. Storage alone: the app
+ *  reads what changed back from it. */
 export async function applyImport(preview: ImportPreview, mode: ImportMode): Promise<void> {
-  const { store, art } = getServices()
+  const { store } = getServices()
 
   if (mode === 'replace') {
     for (const card of await store.listCards()) await store.deleteCard(card.id)
-    for (const stored of await store.listArt()) {
-      await store.deleteArt(stored.name)
-      art.remove(stored.name)
-    }
+    for (const stored of await store.listArt()) await store.deleteArt(stored.name)
   }
 
   let sort = nextSortIndex(await store.listCards())
@@ -89,8 +87,13 @@ export async function applyImport(preview: ImportPreview, mode: ImportMode): Pro
 
   for (const entry of preview.art) {
     const blob = bytesToBlob(entry.bytes, mimeOf(entry.name))
-    await store.putArt({ name: entry.name, blob, mime: blob.type, size: blob.size })
-    await art.setBlob(entry.name, blob)
+    await store.putArt({
+      name: entry.name,
+      blob,
+      mime: blob.type,
+      size: blob.size,
+      updatedAt: Date.now(),
+    })
   }
 }
 
