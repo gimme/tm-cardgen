@@ -187,7 +187,8 @@ export const useStore = create<AppState>((set, get) => {
 
   /** What `changes` names, or everything, from storage into the state. An
    *  image stored anew loads before the cards and one gone goes after them,
-   *  so no card here names an image the cache lacks along the way. */
+   *  so no card here names an image the cache lacks along the way; one that
+   *  won't decode is left out, as if missing. */
   const readBack = async (changes: Changes | undefined) => {
     const { store, art } = getServices()
     const cards = new Map<string, StoredCard | undefined>()
@@ -218,8 +219,16 @@ export const useStore = create<AppState>((set, get) => {
     for (const [name, stored] of images) {
       const cached = art.entry(name)
       if (!stored || (cached && cached.version === stored.updatedAt)) continue
-      await art.setBlob(name, stored.blob, stored.updatedAt)
-      artChanged = true
+      try {
+        await art.setBlob(name, stored.blob, stored.updatedAt)
+        artChanged = true
+      } catch {
+        // one the browser can't decode is as good as missing
+        if (cached) {
+          art.remove(name)
+          artChanged = true
+        }
+      }
     }
 
     const { cards: mine, currentId, text, savedText } = get()

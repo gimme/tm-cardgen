@@ -9,11 +9,13 @@ import { useStore } from '../../src/app/store/useStore.ts'
 import { testFonts } from './fonts.ts'
 
 /** an art cache taking any blob for a 1 × 1 image, since decoding needs a
- *  DOM, and noting each file it loads */
+ *  DOM, except under a name in `broken`, and noting each file it loads */
 export class TestArtCache extends ArtCache {
   loaded: string[] = []
+  broken = new Set<string>()
 
   override setBlob(file: string, blob: Blob, version?: number): Promise<void> {
+    if (this.broken.has(file)) return Promise.reject(new Error('could not decode image'))
     this.loaded.push(file)
     return super.setBlob(file, blob, version)
   }

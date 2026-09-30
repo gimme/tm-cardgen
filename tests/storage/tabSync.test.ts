@@ -152,6 +152,22 @@ it('images are read back by version: one stored anew or since changed loads, one
   expect(art.files()).toEqual([])
 })
 
+it("an image that won't decode is left out, as if missing, and the rest is read", async () => {
+  await open('a')
+  await store.putArt({ name: 'x.png', blob: png('x'), mime: 'image/png', size: 1, updatedAt: 1 })
+  await reload()
+  expect(art.files()).toEqual(['x.png'])
+
+  art.broken.add('x.png')
+  await store.putArt({ name: 'x.png', blob: png('y'), mime: 'image/png', size: 1, updatedAt: 2 })
+  await store.putArt({ name: 'z.heic', blob: png('z'), mime: 'image/heic', size: 1, updatedAt: 2 })
+  art.broken.add('z.heic')
+  await store.updateCards([{ id: 'a', yamlText: 'name: a\ncost: 4\n' }])
+  await reload()
+  expect(art.files()).toEqual([])
+  expect(useStore.getState().text).toBe('name: a\ncost: 4\n')
+})
+
 it('typing while a save is stored leaves the newer text to save', async () => {
   await open('a')
   useStore.getState().updateText('name: a\n# one\n')
