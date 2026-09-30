@@ -213,6 +213,36 @@ it('images are read back by version: one stored anew or since changed loads, one
   expect(art.files()).toEqual([])
 })
 
+it('images swapping names by renames are read back swapped, even in one read', async () => {
+  await open('a')
+  // stored in one go, so of one version
+  await store.write({
+    putArt: [
+      { name: 'x.png', blob: png('x'), mime: 'image/png', size: 1, updatedAt: 1 },
+      { name: 'y.png', blob: png('yy'), mime: 'image/png', size: 2, updatedAt: 1 },
+    ],
+  })
+  await reload()
+  // reads held up behind one decoding, so the renames' reads run as one
+  let decoded = () => {}
+  art.hold = new Promise((resolve) => (decoded = resolve))
+  await store.write({
+    putArt: [{ name: 'z.png', blob: png('z'), mime: 'image/png', size: 1, updatedAt: 1 }],
+  })
+  const reading = reload({ art: ['z.png'] })
+  await vi.waitFor(() => expect(art.loaded).toContain('z.png'))
+
+  const { renameArt } = useStore.getState()
+  await renameArt('x.png', 'swap.png')
+  await renameArt('y.png', 'x.png')
+  await renameArt('swap.png', 'y.png')
+  decoded()
+  await reading
+  await settled()
+  expect(art.entry('x.png')?.bytes).toBe(2)
+  expect(art.entry('y.png')?.bytes).toBe(1)
+})
+
 it("an image that won't decode is left out, as if missing, and the rest is read", async () => {
   await open('a')
   await store.write({

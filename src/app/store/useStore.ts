@@ -464,7 +464,9 @@ export const useStore = create<AppState>((set, get) => {
       const updatedAt = Date.now()
       await store.write({
         deleteArt: [from],
-        putArt: [{ ...stored, name: to }],
+        // a version of its own under the new name, which may have held
+        // another image of the same version
+        putArt: [{ ...stored, name: to, updatedAt }],
         updateCards: renamed.map(({ id, name, yamlText }) => ({ id, name, yamlText, updatedAt })),
         meta: renamed.length > 0 ? { dirtySinceExport: true } : undefined,
       })
