@@ -63,38 +63,31 @@ export async function previewImport(file: File | Blob): Promise<ImportPreview> {
 
 export type ImportMode = 'merge' | 'replace'
 
-/** Apply a previewed import. `merge` adds everything as new cards (same-name
- *  art overwrites); `replace` clears the project first. Storage alone: the app
- *  reads what changed back from it. */
+/** Apply a previewed import, in one write. `merge` adds everything as new
+ *  cards (same-name art overwrites); `replace` clears the project first.
+ *  Storage alone: the app reads what changed back from it. */
 export async function applyImport(preview: ImportPreview, mode: ImportMode): Promise<void> {
   const { store } = getServices()
+  const cards = await store.listCards()
+  const replace = mode === 'replace'
+  const updatedAt = Date.now()
 
-  if (mode === 'replace') {
-    for (const card of await store.listCards()) await store.deleteCard(card.id)
-    for (const stored of await store.listArt()) await store.deleteArt(stored.name)
-  }
-
-  let sort = nextSortIndex(await store.listCards())
-  for (const card of preview.cards) {
-    await store.putCard({
+  let sort = nextSortIndex(replace ? [] : cards)
+  await store.write({
+    deleteCards: replace ? cards.map((c) => c.id) : [],
+    deleteArt: replace ? (await store.listArt()).map((a) => a.name) : [],
+    putCards: preview.cards.map((card) => ({
       id: `card-${crypto.randomUUID()}`,
       name: card.name,
       yamlText: card.yamlText,
       sortIndex: sort++,
-      updatedAt: Date.now(),
-    })
-  }
-
-  for (const entry of preview.art) {
-    const blob = bytesToBlob(entry.bytes, mimeOf(entry.name))
-    await store.putArt({
-      name: entry.name,
-      blob,
-      mime: blob.type,
-      size: blob.size,
-      updatedAt: Date.now(),
-    })
-  }
+      updatedAt,
+    })),
+    putArt: preview.art.map((entry) => {
+      const blob = bytesToBlob(entry.bytes, mimeOf(entry.name))
+      return { name: entry.name, blob, mime: blob.type, size: blob.size, updatedAt }
+    }),
+  })
 }
 
 function mimeOf(name: string): string {

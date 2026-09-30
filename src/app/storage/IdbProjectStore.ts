@@ -1,7 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import {
   DEFAULT_META,
-  type CardPatch,
+  type Batch,
   type ProjectMeta,
   type ProjectStore,
   type StoredArt,
@@ -41,23 +41,6 @@ export class IdbProjectStore implements ProjectStore {
     return this.db.get('cards', id)
   }
 
-  async putCard(card: StoredCard): Promise<void> {
-    await this.db.put('cards', card)
-  }
-
-  async updateCards(patches: CardPatch[]): Promise<void> {
-    const tx = this.db.transaction('cards', 'readwrite')
-    for (const patch of patches) {
-      const stored = await tx.store.get(patch.id)
-      if (stored) await tx.store.put({ ...stored, ...patch })
-    }
-    await tx.done
-  }
-
-  async deleteCard(id: string): Promise<void> {
-    await this.db.delete('cards', id)
-  }
-
   listArt(): Promise<StoredArt[]> {
     return this.db.getAll('art')
   }
@@ -66,21 +49,8 @@ export class IdbProjectStore implements ProjectStore {
     return this.db.get('art', name)
   }
 
-  async putArt(art: StoredArt): Promise<void> {
-    await this.db.put('art', art)
-  }
-
-  async deleteArt(name: string): Promise<void> {
-    await this.db.delete('art', name)
-  }
-
   async getMeta(): Promise<ProjectMeta> {
     return (await this.db.get('meta', 'meta')) ?? { ...DEFAULT_META }
-  }
-
-  async setMeta(patch: Partial<ProjectMeta>): Promise<void> {
-    const current = await this.getMeta()
-    await this.db.put('meta', { ...current, ...patch }, 'meta')
   }
 
   async readAll() {
@@ -95,5 +65,38 @@ export class IdbProjectStore implements ProjectStore {
       art,
       meta: meta ?? { ...DEFAULT_META },
     }
+  }
+
+  async write(batch: Batch): Promise<void> {
+    const tx = this.db.transaction(['cards', 'art', 'meta'], 'readwrite')
+    const cards = tx.objectStore('cards')
+    const art = tx.objectStore('art')
+    const meta = tx.objectStore('meta')
+    const writes = async () => {
+      for (const id of batch.deleteCards ?? []) await cards.delete(id)
+      for (const name of batch.deleteArt ?? []) await art.delete(name)
+      for (const card of batch.putCards ?? []) await cards.put(card)
+      for (const stored of batch.putArt ?? []) await art.put(stored)
+      for (const patch of batch.updateCards ?? []) {
+        const stored = await cards.get(patch.id)
+        if (stored) await cards.put({ ...stored, ...patch })
+      }
+      if (batch.meta) {
+        const current = (await meta.get('meta')) ?? DEFAULT_META
+        await meta.put({ ...current, ...batch.meta }, 'meta')
+      }
+    }
+    await Promise.all([
+      writes().catch((err: unknown) => {
+        // one that throws takes back those before it
+        try {
+          tx.abort()
+        } catch {
+          // a failed request has aborted it already
+        }
+        throw err
+      }),
+      tx.done,
+    ])
   }
 }

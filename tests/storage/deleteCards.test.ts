@@ -10,7 +10,9 @@ it('deleting cards can be undone, back in their places', async () => {
   const store = await IdbProjectStore.open('test-db-' + Math.random())
   setServices({ fonts: testFonts(), art: new ArtCache(), store })
   for (const [i, id] of ['a', 'b', 'c', 'd'].entries()) {
-    await store.putCard({ id, name: id, yamlText: `name: ${id}\n`, sortIndex: i, updatedAt: 1 })
+    await store.write({
+      putCards: [{ id, name: id, yamlText: `name: ${id}\n`, sortIndex: i, updatedAt: 1 }],
+    })
   }
   await useStore.getState().reloadFromStore()
   expect(useStore.getState().currentId).toBe('a')

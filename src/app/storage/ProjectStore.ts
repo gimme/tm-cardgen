@@ -30,27 +30,34 @@ export interface ProjectMeta {
   dirtySinceExport?: boolean
 }
 
+/** Writes landing together, in one transaction, or none of them: the deletes
+ *  first, so that a batch can put back what it deletes, then the puts, the
+ *  card patches and the meta. */
+export interface Batch {
+  deleteCards?: string[]
+  deleteArt?: string[]
+  /** each stored whole, new or in place of the one with its id */
+  putCards?: StoredCard[]
+  /** each stored whole, new or in place of the one with its name */
+  putArt?: StoredArt[]
+  /** the fields given changed on each card; one no longer there is left out */
+  updateCards?: CardPatch[]
+  meta?: Partial<ProjectMeta>
+}
+
 export interface ProjectStore {
   /** in display order (ascending sortIndex) */
   listCards(): Promise<StoredCard[]>
   getCard(id: string): Promise<StoredCard | undefined>
-  putCard(card: StoredCard): Promise<void>
-  /** the fields given changed on each card, in one go; a card no longer
-   *  there is left out */
-  updateCards(patches: CardPatch[]): Promise<void>
-  deleteCard(id: string): Promise<void>
-
   listArt(): Promise<StoredArt[]>
   getArt(name: string): Promise<StoredArt | undefined>
-  putArt(art: StoredArt): Promise<void>
-  deleteArt(name: string): Promise<void>
-
   getMeta(): Promise<ProjectMeta>
-  setMeta(patch: Partial<ProjectMeta>): Promise<void>
-
   /** every card and image and the meta, read in one go, so that no write
    *  lands between the parts */
   readAll(): Promise<{ cards: StoredCard[]; art: StoredArt[]; meta: ProjectMeta }>
+
+  /** every write, so that none is seen half done */
+  write(batch: Batch): Promise<void>
 }
 
 export const DEFAULT_META: ProjectMeta = { schemaVersion: 1 }

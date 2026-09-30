@@ -143,7 +143,7 @@ export const useStore = create<AppState>((set, get) => {
       yamlText,
       sortIndex: nextSortIndex(get().cards),
     }
-    await getServices().store.putCard({ ...entry, updatedAt: Date.now() })
+    await getServices().store.write({ putCards: [{ ...entry, updatedAt: Date.now() }] })
     withCards([entry])
     get().selectCard(entry.id)
   }
@@ -280,7 +280,7 @@ export const useStore = create<AppState>((set, get) => {
       void get().flushSave()
       set({ currentId: id, text: card.yamlText, savedText: card.yamlText })
       get().recompute()
-      void getServices().store.setMeta({ lastOpenCardId: id })
+      void getServices().store.write({ meta: { lastOpenCardId: id } })
     },
 
     updateText(text) {
@@ -301,14 +301,15 @@ export const useStore = create<AppState>((set, get) => {
 
     async flushSave() {
       clearTimeout(saveTimer)
-      const { currentId: id, cards, text, savedText, dirtySinceExport } = get()
+      const { currentId: id, cards, text, savedText } = get()
       if (id === undefined || text === savedText) return
       const card = cards.find((c) => c.id === id)
       if (!card) return
-      const { store } = getServices()
       try {
-        await store.updateCards([{ id, name: card.name, yamlText: text, updatedAt: Date.now() }])
-        if (!dirtySinceExport) await store.setMeta({ dirtySinceExport: true })
+        await getServices().store.write({
+          updateCards: [{ id, name: card.name, yamlText: text, updatedAt: Date.now() }],
+          meta: { dirtySinceExport: true },
+        })
         // stored for this card, unless another is open by now; typing since
         // stays unsaved
         if (get().currentId === id) set({ savedText: text })
@@ -345,8 +346,7 @@ export const useStore = create<AppState>((set, get) => {
     async deleteCards(ids) {
       const gone = get().cards.filter((c) => ids.includes(c.id))
       if (gone.length === 0) return
-      const { store } = getServices()
-      for (const c of gone) await store.deleteCard(c.id)
+      await getServices().store.write({ deleteCards: gone.map((c) => c.id) })
       set({ deleted: gone })
       dropCards(ids)
     },
@@ -354,8 +354,8 @@ export const useStore = create<AppState>((set, get) => {
     async undoDelete() {
       const { deleted } = get()
       if (!deleted) return
-      const { store } = getServices()
-      for (const c of deleted) await store.putCard({ ...c, updatedAt: Date.now() })
+      const updatedAt = Date.now()
+      await getServices().store.write({ putCards: deleted.map((c) => ({ ...c, updatedAt })) })
       set({ deleted: undefined })
       withCards(deleted)
     },
@@ -374,9 +374,9 @@ export const useStore = create<AppState>((set, get) => {
       set({ cards: renumbered })
       // the order alone: the text is as stored, or the editor's to save
       const changed = renumbered.filter((c, i) => c !== cards[i])
-      await getServices().store.updateCards(
-        changed.map((c) => ({ id: c.id, sortIndex: c.sortIndex })),
-      )
+      await getServices().store.write({
+        updateCards: changed.map((c) => ({ id: c.id, sortIndex: c.sortIndex })),
+      })
     },
 
     async restoreSamples() {
@@ -401,7 +401,7 @@ export const useStore = create<AppState>((set, get) => {
     },
 
     async markExported() {
-      await getServices().store.setMeta({ dirtySinceExport: false })
+      await getServices().store.write({ meta: { dirtySinceExport: false } })
       set({ dirtySinceExport: false })
     },
 
@@ -415,14 +415,22 @@ export const useStore = create<AppState>((set, get) => {
         else if (!(await sameBytes(stored.blob, file.blob))) replacing.push(file)
       }
       const replace = replacing.length > 0 && confirmReplace(replacing.map((f) => f.name))
-      for (const { name, blob } of replace ? [...fresh, ...replacing] : fresh) {
-        const updatedAt = Date.now()
-        await store.putArt({ name, blob, mime: blob.type, size: blob.size, updatedAt })
-      }
+      const storing = replace ? [...fresh, ...replacing] : fresh
+      if (storing.length === 0) return
+      const updatedAt = Date.now()
+      await store.write({
+        putArt: storing.map(({ name, blob }) => ({
+          name,
+          blob,
+          mime: blob.type,
+          size: blob.size,
+          updatedAt,
+        })),
+      })
     },
 
     async deleteArt(name) {
-      await getServices().store.deleteArt(name)
+      await getServices().store.write({ deleteArt: [name] })
     },
 
     async renameArt(from, to) {
@@ -430,17 +438,16 @@ export const useStore = create<AppState>((set, get) => {
       const stored = await store.getArt(from)
       // never onto another file: that would replace its image
       if (!stored || (await store.getArt(to))) return
-      // stored under the new name before a card names it, and gone from the
-      // old one once none does, for whatever reads storage in between
-      await store.putArt({ ...stored, name: to })
       const renamed = get()
         .cards.filter((c) => artFileOf(c.yamlText) === from)
         .map((c) => ({ ...c, yamlText: withArtFile(c.yamlText, to) }))
-      await store.updateCards(
-        renamed.map(({ id, name, yamlText }) => ({ id, name, yamlText, updatedAt: Date.now() })),
-      )
-      await store.deleteArt(from)
-      if (renamed.length > 0) await store.setMeta({ dirtySinceExport: true })
+      const updatedAt = Date.now()
+      await store.write({
+        deleteArt: [from],
+        putArt: [{ ...stored, name: to }],
+        updateCards: renamed.map(({ id, name, yamlText }) => ({ id, name, yamlText, updatedAt })),
+        meta: renamed.length > 0 ? { dirtySinceExport: true } : undefined,
+      })
       withCards(renamed)
       set((s) => ({ dirtySinceExport: s.dirtySinceExport || renamed.length > 0 }))
     },

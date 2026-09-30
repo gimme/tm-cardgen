@@ -7,12 +7,14 @@ it('renaming an art file takes the cards naming it along', async () => {
   const { store, art } = await openApp()
 
   const card = (id: string, sortIndex: number, art: string) =>
-    store.putCard({ id, name: id, yamlText: `name: ${id}\n${art}`, sortIndex, updatedAt: 1 })
+    store.write({
+      putCards: [{ id, name: id, yamlText: `name: ${id}\n${art}`, sortIndex, updatedAt: 1 }],
+    })
   await card('open', 0, 'art: { file: dust.png, zoom: 1.2 } # keep me\n')
   await card('other', 1, 'art: "dust.png"\n')
   await card('elsewhere', 2, 'art: sky.png\n')
   const blob = new Blob([new Uint8Array([1])], { type: 'image/png' })
-  await store.putArt({ name: 'dust.png', blob, mime: 'image/png', size: 1 })
+  await store.write({ putArt: [{ name: 'dust.png', blob, mime: 'image/png', size: 1 }] })
 
   await useStore.getState().reloadFromStore()
   expect(useStore.getState().currentId).toBe('open')
@@ -39,7 +41,9 @@ it('renaming an art file takes the cards naming it along', async () => {
   expect(art.files()).toEqual(['red dust, v2.png'])
 
   // a name already taken is refused: both files and every card stay as they were
-  await store.putArt({ name: 'sky.png', blob: new Blob(['sky']), mime: 'image/png', size: 3 })
+  await store.write({
+    putArt: [{ name: 'sky.png', blob: new Blob(['sky']), mime: 'image/png', size: 3 }],
+  })
   await useStore.getState().renameArt('red dust, v2.png', 'sky.png')
   expect((await store.listArt()).map((a) => a.name)).toEqual(['red dust, v2.png', 'sky.png'])
   expect(await (await store.getArt('sky.png'))!.blob.text()).toBe('sky')
