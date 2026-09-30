@@ -35,12 +35,16 @@ export interface AppState {
   /** editor text of the current card (authoritative while editing); the
    *  editor follows it where it changes from outside, by another tab say */
   text: string
+  /** the current card's text as storage last had it, read or saved: `text`
+   *  is unsaved while it differs */
+  savedText: string
+  /** the last save failed; the next to land clears it */
+  saveFailed: boolean
   /** last successfully laid-out card (never blanks mid-keystroke) */
   layout?: CardLayout
   /** true while the text no longer produces a valid layout */
   stale: boolean
   diagnostics: Diagnostic[]
-  saveState: 'saved' | 'saving' | 'error'
   /** every card at once, or the current card's list, editor and preview;
    *  the router keeps the address bar in step */
   page: 'gallery' | 'editor'
@@ -88,6 +92,10 @@ export interface AppState {
   setArtManagerOpen(open: boolean): void
   setExportDialogOpen(open: boolean): void
 }
+
+/** how the current card's text stands with storage */
+export const saveStateOf = (s: AppState): 'saved' | 'saving' | 'error' =>
+  s.saveFailed ? 'error' : s.text === s.savedText ? 'saved' : 'saving'
 
 const RECOMPUTE_DELAY = 200
 const AUTOSAVE_DELAY = 500
@@ -143,17 +151,18 @@ export const useStore = create<AppState>((set, get) => {
   /** the card, or nothing when there is none */
   const show = (id: string | undefined) => {
     if (id !== undefined) get().selectCard(id)
-    else set({ currentId: undefined, text: '', layout: undefined, stale: false })
+    else set({ currentId: undefined, text: '', savedText: '', layout: undefined, stale: false })
   }
 
-  /** `cards` for the list, the editor's text following the current card's,
-   *  which lays out again after the same pause as typing. With the current
-   *  card gone, `open` opens where it is among them, or else the first */
+  /** `cards`, as stored, for the list, the editor's text following the
+   *  current card's, which lays out again after the same pause as typing. With
+   *  the current card gone, `open` opens where it is among them, or else the
+   *  first */
   const setCards = (cards: CardEntry[], open?: string) => {
     const { currentId, text } = get()
     const current = cards.find((c) => c.id === currentId)
     if (current && current.yamlText !== text) {
-      set({ cards, text: current.yamlText })
+      set({ cards, text: current.yamlText, savedText: current.yamlText })
       clearTimeout(recomputeTimer)
       recomputeTimer = setTimeout(() => get().recompute(), RECOMPUTE_DELAY)
     } else {
@@ -213,9 +222,9 @@ export const useStore = create<AppState>((set, get) => {
       artChanged = true
     }
 
-    const { cards: mine, currentId, saveState } = get()
+    const { cards: mine, currentId, text, savedText } = get()
     // text typed into the current card and not yet saved stays
-    const typing = saveState === 'saved' ? undefined : currentId
+    const typing = text === savedText ? undefined : currentId
     const byId = new Map(mine.map((c) => [c.id, c]))
     for (const [id, stored] of cards) {
       const here = byId.get(id)
@@ -246,9 +255,10 @@ export const useStore = create<AppState>((set, get) => {
     status: 'loading',
     cards: [],
     text: '',
+    savedText: '',
+    saveFailed: false,
     stale: false,
     diagnostics: [],
-    saveState: 'saved',
     page: 'editor',
     artManagerOpen: false,
     exportDialogOpen: false,
@@ -259,7 +269,7 @@ export const useStore = create<AppState>((set, get) => {
       const card = get().cards.find((c) => c.id === id)
       if (!card) return
       void get().flushSave()
-      set({ currentId: id, text: card.yamlText })
+      set({ currentId: id, text: card.yamlText, savedText: card.yamlText })
       get().recompute()
       void getServices().store.setMeta({ lastOpenCardId: id })
     },
@@ -270,7 +280,6 @@ export const useStore = create<AppState>((set, get) => {
       const name = extractName(text)
       set({
         text,
-        saveState: 'saving',
         cards: cards.map((c) =>
           c.id === currentId ? { ...c, yamlText: text, name: name ?? c.name } : c,
         ),
@@ -283,20 +292,20 @@ export const useStore = create<AppState>((set, get) => {
 
     async flushSave() {
       clearTimeout(saveTimer)
-      const { currentId, cards, saveState, dirtySinceExport } = get()
-      if (currentId === undefined || saveState === 'saved') return
-      const card = cards.find((c) => c.id === currentId)
+      const { currentId: id, cards, text, savedText, dirtySinceExport } = get()
+      if (id === undefined || text === savedText) return
+      const card = cards.find((c) => c.id === id)
       if (!card) return
-      const { id, name, yamlText } = card
       const { store } = getServices()
       try {
-        await store.updateCards([{ id, name, yamlText, updatedAt: Date.now() }])
+        await store.updateCards([{ id, name: card.name, yamlText: text, updatedAt: Date.now() }])
         if (!dirtySinceExport) await store.setMeta({ dirtySinceExport: true })
-        // typing while it was stored leaves that still to save
-        const saved = get().cards.find((c) => c.id === id)?.yamlText === yamlText
-        set(saved ? { saveState: 'saved', dirtySinceExport: true } : { dirtySinceExport: true })
+        // stored for this card, unless another is open by now; typing since
+        // stays unsaved
+        if (get().currentId === id) set({ savedText: text })
+        set({ saveFailed: false, dirtySinceExport: true })
       } catch {
-        set({ saveState: 'error' })
+        set({ saveFailed: true })
       }
     },
 
@@ -419,7 +428,7 @@ export const useStore = create<AppState>((set, get) => {
         .cards.filter((c) => artFileOf(c.yamlText) === from)
         .map((c) => ({ ...c, yamlText: withArtFile(c.yamlText, to) }))
       await store.updateCards(
-        renamed.map(({ id, yamlText }) => ({ id, yamlText, updatedAt: Date.now() })),
+        renamed.map(({ id, name, yamlText }) => ({ id, name, yamlText, updatedAt: Date.now() })),
       )
       await store.deleteArt(from)
       if (renamed.length > 0) await store.setMeta({ dirtySinceExport: true })

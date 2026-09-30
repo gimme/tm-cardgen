@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { EditorView } from '@codemirror/view'
 import { makeEditorState, replaceText } from '../../editor/cmSetup.ts'
-import { useStore } from '../../store/useStore.ts'
+import { saveStateOf, useStore } from '../../store/useStore.ts'
 import { SyntaxSheet } from './SyntaxSheet.tsx'
 
 /** set once the cheat sheet has been opened; the first-run hint goes then */
@@ -26,7 +26,7 @@ function rememberSheetSeen() {
 export function EditorPane() {
   const currentId = useStore((s) => s.currentId)
   const diagnostics = useStore((s) => s.diagnostics)
-  const saveState = useStore((s) => s.saveState)
+  const saveState = useStore(saveStateOf)
   const hostRef = useRef<HTMLDivElement>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [hint, setHint] = useState(() => !sheetSeen())

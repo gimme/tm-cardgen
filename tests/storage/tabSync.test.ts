@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { beforeEach, expect, it } from 'vitest'
 import type { IdbProjectStore } from '../../src/app/storage/IdbProjectStore.ts'
 import { joinTabs, type Changes } from '../../src/app/storage/tabSync.ts'
-import { useStore } from '../../src/app/store/useStore.ts'
+import { saveStateOf, useStore } from '../../src/app/store/useStore.ts'
 import { openApp, settled, type TestArtCache } from '../helpers/app.ts'
 
 const fresh = useStore.getState()
@@ -22,6 +22,7 @@ const card = (id: string) => useStore.getState().cards.find((c) => c.id === id)
 const ids = () => useStore.getState().cards.map((c) => c.id)
 const reload = (changes?: Changes) => useStore.getState().reloadFromStore(changes)
 const png = (text: string) => new Blob([text], { type: 'image/png' })
+const saveState = () => saveStateOf(useStore.getState())
 
 beforeEach(() => useStore.setState(fresh, true))
 
@@ -82,6 +83,24 @@ it('the open card keeps text typed here and not yet saved, until its own save', 
   expect((await store.getCard('a'))?.yamlText).toBe('name: a\n# here\n')
 })
 
+it('the card opening after one with unsaved text is deleted takes outside edits', async () => {
+  await open('a', 'b')
+  useStore.getState().updateText('name: a\n# here\n')
+  // deleted in another tab, and here, before the autosave
+  await store.deleteCard('a')
+  await reload({ cards: ['a'] })
+  expect(useStore.getState().currentId).toBe('b')
+  expect(saveState()).toBe('saved')
+
+  await store.updateCards([{ id: 'b', yamlText: 'name: b\ncost: 9\n' }])
+  await reload({ cards: ['b'] })
+  expect(useStore.getState().text).toBe('name: b\ncost: 9\n')
+
+  useStore.getState().updateText('name: b\ncost: 9\n# here\n')
+  await useStore.getState().deleteCards(['b'])
+  expect(saveState()).toBe('saved')
+})
+
 it('reading everything back drops what is no longer stored and takes in what is new', async () => {
   await open('a', 'b')
   await store.deleteCard('b')
@@ -139,10 +158,10 @@ it('typing while a save is stored leaves the newer text to save', async () => {
   const saving = useStore.getState().flushSave()
   useStore.getState().updateText('name: a\n# two\n')
   await saving
-  expect(useStore.getState().saveState).toBe('saving')
+  expect(saveState()).toBe('saving')
 
   await useStore.getState().flushSave()
-  expect(useStore.getState().saveState).toBe('saved')
+  expect(saveState()).toBe('saved')
   await settled()
   expect((await store.getCard('a'))?.yamlText).toBe('name: a\n# two\n')
   expect(useStore.getState().text).toBe('name: a\n# two\n')
