@@ -1212,13 +1212,6 @@ button {
   opacity: 1;
 }
 
-/* with no hover to show it, a touch screen always has it to tap */
-@media (hover: none) {
-  .tile-check {
-    opacity: 1;
-  }
-}
-
 /* on the card's corner, clear of what is printed there; above the cards
    after it, and an open one above the other menus. Only the round button
    and the open menu take the pointer: the square around the button would
@@ -1259,6 +1252,15 @@ button {
 .gallery-grid li.menu-open .tile-menu-button,
 .tile-menu-button:focus-visible {
   opacity: 1;
+}
+
+/* with no hover to show them, a touch screen always has the check and the
+   menu button to tap */
+@media (hover: none) {
+  .tile-check,
+  .tile-menu-button {
+    opacity: 1;
+  }
 }
 
 .tile-menu-items {
