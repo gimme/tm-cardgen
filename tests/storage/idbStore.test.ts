@@ -92,11 +92,9 @@ describe('IdbProjectStore', () => {
     let asked = () => {}
     const outdated = new Promise<void>((resolve) => (asked = resolve))
     let done = () => {}
-    await IdbProjectStore.open(name, {
-      outdated() {
-        asked()
-        return new Promise<void>((resolve) => (done = resolve))
-      },
+    await IdbProjectStore.open(name, () => {
+      asked()
+      return new Promise<void>((resolve) => (done = resolve))
     })
 
     let upgraded = false

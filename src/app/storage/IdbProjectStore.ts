@@ -14,16 +14,6 @@ interface CardgenDB extends DBSchema {
   meta: { key: string; value: ProjectMeta }
 }
 
-/** What the app does when tabs open different versions of the database: a
- *  tab on an older one holds a newer one's upgrade up until it closes. */
-export interface VersionClash {
-  /** this tab's upgrade waits for another tab's older connection to close */
-  blocked?(): void
-  /** another tab waits to upgrade: this tab's connection closes once the
-   *  app has done what it must first */
-  outdated?(): Promise<void> | void
-}
-
 export class IdbProjectStore implements ProjectStore {
   private db: IDBPDatabase<CardgenDB>
 
@@ -31,16 +21,21 @@ export class IdbProjectStore implements ProjectStore {
     this.db = db
   }
 
-  static async open(name = 'tm-cardgen', clash: VersionClash = {}): Promise<IdbProjectStore> {
+  /** `outdated` runs when another tab asks for a newer version of the
+   *  database. That tab's upgrade is held up for as long as this connection is
+   *  open, so the connection closes as soon as `outdated` is done. */
+  static async open(
+    name = 'tm-cardgen',
+    outdated?: () => Promise<void> | void,
+  ): Promise<IdbProjectStore> {
     const db = await openDB<CardgenDB>(name, 1, {
       upgrade(db) {
         db.createObjectStore('cards', { keyPath: 'id' })
         db.createObjectStore('art', { keyPath: 'name' })
         db.createObjectStore('meta')
       },
-      blocked: () => clash.blocked?.(),
       blocking: () => {
-        void Promise.resolve(clash.outdated?.()).finally(() => db.close())
+        void Promise.resolve(outdated?.()).finally(() => db.close())
       },
     })
     return new IdbProjectStore(db)

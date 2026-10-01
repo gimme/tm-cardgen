@@ -9,27 +9,23 @@ import { setServices } from './store/services.ts'
 import { useStore } from './store/useStore.ts'
 
 export async function initApp(): Promise<void> {
-  let leaveTabs = () => {}
   const [fonts, idb] = await Promise.all([
     loadFonts(),
-    IdbProjectStore.open(undefined, {
-      blocked: () => useStore.setState({ versionClash: 'waiting' }),
-      // what's typed is saved before this tab makes way for the newer one
-      async outdated() {
-        leaveTabs()
-        await useStore.getState().flushSave()
-        useStore.setState({ versionClash: 'outdated' })
-      },
+    // a tab running a newer version of the app waits for this one to let go of
+    // the database: what's typed is saved, and this tab starts again as that
+    // version
+    IdbProjectStore.open(undefined, async () => {
+      await useStore.getState().flushSave()
+      location.reload()
     }),
   ])
-  if (useStore.getState().versionClash === 'waiting') useStore.setState({ versionClash: undefined })
   await seedSamples(idb)
 
   // ask the browser not to evict storage
   void navigator.storage?.persist?.()
 
-  // what a write changes is read back from storage, into this tab and, once
-  // it has joined, every other tab of the app: each tab's state follows it
+  // after each write, storage is read back into this tab and, once it has
+  // joined, every other tab of the app: each tab's state follows storage
   const readBack = (changes: Changes) => void useStore.getState().reloadFromStore(changes)
   const art = new ArtCache()
   setServices({ fonts, art, store: shared(idb, readBack) })
@@ -37,13 +33,11 @@ export async function initApp(): Promise<void> {
 
   // joined before the first read, which the other tabs' writes then wait
   // behind, so that none landing after it goes unread
-  leaveTabs = joinTabs(readBack)
+  joinTabs(readBack)
   await useStore.getState().reloadFromStore()
   // read again on coming back into view or out of the back-forward cache, for
   // any write this tab missed while the browser froze it
-  const catchUp = () => {
-    if (useStore.getState().versionClash !== 'outdated') void useStore.getState().reloadFromStore()
-  }
+  const catchUp = () => void useStore.getState().reloadFromStore()
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') catchUp()
   })

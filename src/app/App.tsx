@@ -14,30 +14,8 @@ export default function App() {
   const artManagerOpen = useStore((s) => s.artManagerOpen)
   const exportDialogOpen = useStore((s) => s.exportDialogOpen)
   const page = useStore((s) => s.page)
-  const versionClash = useStore((s) => s.versionClash)
 
-  // ahead of a failure to start, which reads on the closed store would cause
-  if (versionClash === 'outdated') {
-    return (
-      <div className="app-loading">
-        <p>
-          A newer version of tm-cardgen is open in another tab.{' '}
-          <button type="button" onClick={() => location.reload()}>
-            Reload
-          </button>{' '}
-          to keep working here.
-        </p>
-      </div>
-    )
-  }
   if (startupError) return <div className="app-loading">Failed to start: {startupError}</div>
-  if (versionClash === 'waiting') {
-    return (
-      <div className="app-loading">
-        Waiting for other tabs of tm-cardgen to close: they run an older version.
-      </div>
-    )
-  }
   if (status !== 'ready') return <div className="app-loading">Loading fonts &amp; assets…</div>
 
   return (
