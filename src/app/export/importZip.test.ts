@@ -58,6 +58,17 @@ describe('previewImport', () => {
     expect(preview.cards[0].error).toContain('cost cannot be negative')
   })
 
+  it('names a card with an error by its name line, and by its file without one', async () => {
+    const zip = makeZip({
+      'cards/pets-1.yaml': 'name: Pets (1)\ncost: -1\n',
+      'cards/quoted.yaml': 'name: "Deep: Core"\ncost: [\n',
+      'cards/unnamed.yaml': 'cost: 3\n',
+    })
+    const preview = await previewImport(zip)
+    expect(preview.cards.every((c) => !c.valid)).toBe(true)
+    expect(preview.cards.map((c) => c.name)).toEqual(['Pets (1)', 'Deep: Core', 'unnamed'])
+  })
+
   it('flags an empty zip', async () => {
     const preview = await previewImport(makeZip({ 'readme.txt': 'hi' }))
     expect(preview.problems.some((p) => p.includes('no cards'))).toBe(true)

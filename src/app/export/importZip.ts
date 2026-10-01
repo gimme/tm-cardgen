@@ -1,5 +1,6 @@
 import { strFromU8, unzipSync } from 'fflate'
 import { checkCard } from '../../core/index.ts'
+import { extractName } from '../store/cardName.ts'
 import { getServices } from '../store/services.ts'
 import { nextSortIndex } from '../storage/ProjectStore.ts'
 import { bytesToBlob } from './exportCommon.ts'
@@ -42,7 +43,8 @@ export async function previewImport(file: File | Blob): Promise<ImportPreview> {
     const { diagnostics, spec } = checkCard(yamlText)
     preview.cards.push({
       slug,
-      name: spec?.name ?? slug,
+      // a card with an error keeps the name its text gives, as in the editor
+      name: spec?.name ?? extractName(yamlText) ?? slug,
       yamlText,
       valid: spec !== undefined,
       error: spec ? undefined : diagnostics.find((d) => d.severity === 'error')?.message,
