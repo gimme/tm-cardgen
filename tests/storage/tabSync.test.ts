@@ -49,20 +49,23 @@ function listen() {
   }
 }
 
-it('a write, once it has landed, is announced to the other tabs by what it changed', async () => {
+it('a write, once it has landed, is announced to the other tabs, once', async () => {
   await open('a')
+  // behind the write of which card is open, so that it isn't heard below
+  await store.getMeta()
   const { heard, more, close } = listen()
   try {
-    const cards = () => heard.filter((changes) => changes.cards)
     // typing is not a write
     useStore.getState().updateText('name: a\ncost: 3\n')
     await new Promise((resolve) => setTimeout(resolve, 20))
-    expect(cards()).toEqual([])
+    expect(heard).toEqual([])
 
     await useStore.getState().flushSave()
-    while (cards().length === 0) await more()
-    // with the meta it marks as changed since the last export, in one go
-    expect(cards()).toEqual([{ cards: ['a'], meta: true }])
+    while (heard.length === 0) await more()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    // the card and the meta it marks as changed since the last export, in
+    // one go, and no image for the others to read
+    expect(heard).toEqual([{ art: false }])
     expect((await store.getCard('a'))?.yamlText).toBe('name: a\ncost: 3\n')
   } finally {
     close()
@@ -82,7 +85,7 @@ it('an operation on several records lands, and is announced, as one', async () =
     await useStore.getState().renameArt('x.png', 'y.png')
     while (art().length === 0) await more()
     await new Promise((resolve) => setTimeout(resolve, 20))
-    expect(art()).toEqual([{ cards: ['b'], art: ['x.png', 'y.png'], meta: true }])
+    expect(art()).toEqual([{ art: true }])
   } finally {
     close()
   }
@@ -96,7 +99,7 @@ it("another tab's writes are read back: edits, new cards, moves and deletes", as
   })
   await store.write({ updateCards: [{ id: 'c', sortIndex: -1 }] })
   await store.write({ deleteCards: ['b'] })
-  await reload({ cards: ['a', 'd', 'c', 'b'] })
+  await reload({ art: false })
   expect(ids()).toEqual(['c', 'a', 'd'])
   // the open card's text with them, for the editor to follow
   expect(card('a')?.name).toBe('A')
@@ -104,7 +107,7 @@ it("another tab's writes are read back: edits, new cards, moves and deletes", as
 
   // the open card deleted, the first opens
   await store.write({ deleteCards: ['a'] })
-  await reload({ cards: ['a'] })
+  await reload({ art: false })
   expect(useStore.getState().currentId).toBe('c')
   expect(useStore.getState().text).toBe('name: c\n')
 })
@@ -113,7 +116,7 @@ it('the open card keeps text typed here and not yet saved, until its own save', 
   await open('a')
   useStore.getState().updateText('name: a\n# here\n')
   await store.write({ updateCards: [{ id: 'a', yamlText: 'name: a\n# there\n' }] })
-  await reload({ cards: ['a'] })
+  await reload({ art: false })
   expect(useStore.getState().text).toBe('name: a\n# here\n')
 
   await useStore.getState().flushSave()
@@ -124,7 +127,7 @@ it('text kept here is told from what storage has since, so typing undone back sa
   await open('a')
   useStore.getState().updateText('name: a\n# here\n')
   await store.write({ updateCards: [{ id: 'a', yamlText: 'name: a\n# there\n' }] })
-  await reload({ cards: ['a'] })
+  await reload({ art: false })
   // typed into what storage has, it is saved
   useStore.getState().updateText('name: a\n# there\n')
   expect(saveState()).toBe('saved')
@@ -141,12 +144,12 @@ it('the card opening after one with unsaved text is deleted takes outside edits'
   useStore.getState().updateText('name: a\n# here\n')
   // deleted in another tab, and here, before the autosave
   await store.write({ deleteCards: ['a'] })
-  await reload({ cards: ['a'] })
+  await reload({ art: false })
   expect(useStore.getState().currentId).toBe('b')
   expect(saveState()).toBe('saved')
 
   await store.write({ updateCards: [{ id: 'b', yamlText: 'name: b\ncost: 9\n' }] })
-  await reload({ cards: ['b'] })
+  await reload({ art: false })
   expect(useStore.getState().text).toBe('name: b\ncost: 9\n')
 
   useStore.getState().updateText('name: b\ncost: 9\n# here\n')
@@ -168,15 +171,16 @@ it('reading everything back drops what is no longer stored and takes in what is 
 
 it('reads asked for while one runs wait for it, as one', async () => {
   await open('a', 'b')
-  const first = reload({ cards: ['a'] })
+  const first = reload({ art: false })
   // the first under way
   await new Promise((resolve) => setTimeout(resolve, 0))
   await store.write({ updateCards: [{ id: 'b', yamlText: 'name: b\ncost: 2\n' }] })
   await store.write({
     putCards: [{ id: 'c', name: 'c', yamlText: 'name: c\n', sortIndex: 2, updatedAt: 1 }],
+    putArt: [{ name: 'x.png', blob: png('x'), mime: 'image/png', size: 1, updatedAt: 1 }],
   })
-  const second = reload({ cards: ['b'] })
-  // everything, taking in the one waiting
+  const second = reload({ art: false })
+  // one with the images, which the one waiting then takes in too
   const third = reload()
   expect(third).toBe(second)
   expect(second).not.toBe(first)
@@ -184,6 +188,7 @@ it('reads asked for while one runs wait for it, as one', async () => {
   await third
   expect(card('b')?.yamlText).toBe('name: b\ncost: 2\n')
   expect(ids()).toEqual(['a', 'b', 'c'])
+  expect(art.files()).toEqual(['x.png'])
 })
 
 it('images are read back by version: one stored anew or since changed loads, one gone goes', async () => {
@@ -192,12 +197,16 @@ it('images are read back by version: one stored anew or since changed loads, one
     putArt: [{ name: 'x.png', blob: png('x'), mime: 'image/png', size: 1, updatedAt: 1 }],
   })
   const version = useStore.getState().artVersion
-  await reload({ art: ['x.png'] })
+  // a read after a write that changed no image doesn't look at them
+  await reload({ art: false })
+  expect(art.loaded).toEqual([])
+
+  await reload({ art: true })
   expect(art.loaded).toEqual(['x.png'])
   expect(useStore.getState().artVersion).toBe(version + 1)
 
-  // the same version, asked for or with everything, is left be
-  await reload({ art: ['x.png'] })
+  // the same version is left be
+  await reload({ art: true })
   await reload()
   expect(art.loaded).toEqual(['x.png'])
   expect(useStore.getState().artVersion).toBe(version + 1)
@@ -209,7 +218,7 @@ it('images are read back by version: one stored anew or since changed loads, one
   expect(art.loaded).toEqual(['x.png', 'x.png'])
 
   await store.write({ deleteArt: ['x.png'] })
-  await reload({ art: ['x.png'] })
+  await reload({ art: true })
   expect(art.files()).toEqual([])
 })
 
@@ -229,7 +238,7 @@ it('images swapping names by renames are read back swapped, even in one read', a
   await store.write({
     putArt: [{ name: 'z.png', blob: png('z'), mime: 'image/png', size: 1, updatedAt: 1 }],
   })
-  const reading = reload({ art: ['z.png'] })
+  const reading = reload({ art: true })
   await vi.waitFor(() => expect(art.loaded).toContain('z.png'))
 
   const { renameArt } = useStore.getState()
@@ -316,4 +325,27 @@ it('a move stores the order alone, so it never takes back text another tab store
   // and the move's own read back takes that text in
   await settled()
   expect(card('b')?.yamlText).toBe('name: b\ncost: 5\n')
+})
+
+it("a move shows at once, and a read of storage already under way doesn't put it back", async () => {
+  await open('a', 'b')
+  await settled()
+  const reading = reload({ art: false })
+  // its read of the cards asked for, ahead of the move's write
+  await Promise.resolve()
+  await Promise.resolve()
+  const orders = new Set<string>()
+  const unfollow = useStore.subscribe((s) => orders.add(s.cards.map((c) => c.id).join()))
+  try {
+    const moved = useStore.getState().moveCard('b', 0)
+    expect(ids()).toEqual(['b', 'a'])
+
+    await moved
+    await reading
+    await settled()
+    expect([...orders]).toEqual(['b,a'])
+    expect((await store.listCards()).map((c) => c.id)).toEqual(['b', 'a'])
+  } finally {
+    unfollow()
+  }
 })

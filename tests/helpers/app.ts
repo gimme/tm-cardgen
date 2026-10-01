@@ -1,6 +1,7 @@
-// The app's services on a fresh store, wired as startup wires them: what a
-// write changes is read back into the state. Another tab's writes are those
-// made on the store returned, followed by reloadFromStore of what they changed.
+// The app's services on a fresh store, wired as startup wires them: after a
+// write, storage is read back into the state. Another tab's writes are those
+// made on the store returned, followed by reloadFromStore as that tab's
+// announcement would cause.
 import { ArtCache } from '../../src/app/services/artCache.ts'
 import { IdbProjectStore } from '../../src/app/storage/IdbProjectStore.ts'
 import { shared } from '../../src/app/storage/tabSync.ts'
@@ -46,4 +47,4 @@ export async function openApp(): Promise<{ store: IdbProjectStore; art: TestArtC
 }
 
 /** once every read of storage asked for so far is in */
-export const settled = () => useStore.getState().reloadFromStore({})
+export const settled = () => useStore.getState().reloadFromStore({ art: false })

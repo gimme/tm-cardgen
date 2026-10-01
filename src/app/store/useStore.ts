@@ -8,12 +8,7 @@ import {
   type Diagnostic,
 } from '../../core/index.ts'
 import { NEW_CARD_TEMPLATE } from '../samples/index.ts'
-import {
-  nextSortIndex,
-  type ProjectMeta,
-  type StoredArt,
-  type StoredCard,
-} from '../storage/ProjectStore.ts'
+import { nextSortIndex, type StoredCard } from '../storage/ProjectStore.ts'
 import { seedSamples } from '../storage/seed.ts'
 import type { Changes } from '../storage/tabSync.ts'
 import { copyName, extractName, withName } from './cardName.ts'
@@ -70,10 +65,11 @@ export interface AppState {
   dismissDeleted(): void
   moveCard(id: string, toIndex: number): Promise<void>
   restoreSamples(): Promise<void>
-  /** Storage read back into the state and the art cache: what `changes`
-   *  names, or everything. The current card keeps text typed here and not yet
-   *  saved; with it gone, the last one open or the first opens. One read at a
-   *  time, in order: those asked for while one runs wait for it, as one. */
+  /** Storage read back into the state: the cards and the meta, and the images
+   *  into the art cache unless `changes` says none changed. The current card
+   *  keeps text typed here and not yet saved; with it gone, the last one open
+   *  or the first opens. One read at a time, in order: those asked for while
+   *  one runs wait for it, as one. */
   reloadFromStore(changes?: Changes): Promise<void>
   /** the project was just backed up */
   markExported(): Promise<void>
@@ -103,6 +99,9 @@ const AUTOSAVE_DELAY = 500
 let recomputeTimer: ReturnType<typeof setTimeout> | undefined
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 
+// positions cards were moved to here, by card id, until their write lands
+const moving = new Map<string, number>()
+
 // the last read of storage asked for, and the one waiting to start
 let reading: Promise<void> = Promise.resolve()
 let waiting: { changes?: Changes; done: Promise<void> } | undefined
@@ -119,15 +118,10 @@ const sameCard = (a: CardEntry, b: CardEntry) =>
 
 const bySortIndex = (a: CardEntry, b: CardEntry) => a.sortIndex - b.sortIndex
 
-/** two reads' changes as one; everything, as no changes, takes in the other */
+/** two reads asked for, as one: with the images if either takes them in, and
+ *  one given no changes does */
 const merged = (a?: Changes, b?: Changes): Changes | undefined =>
-  a && b
-    ? {
-        cards: [...(a.cards ?? []), ...(b.cards ?? [])],
-        art: [...(a.art ?? []), ...(b.art ?? [])],
-        meta: a.meta || b.meta,
-      }
-    : undefined
+  a && b ? { art: a.art || b.art } : undefined
 
 async function sameBytes(a: Blob, b: Blob): Promise<boolean> {
   if (a.size !== b.size) return false
@@ -186,89 +180,81 @@ export const useStore = create<AppState>((set, get) => {
     if (remaining.length !== cards.length) setCards(remaining)
   }
 
-  /** What `changes` names, or everything, from storage into the state. An
-   *  image stored anew loads before the cards and one gone goes after them,
-   *  so no card here names an image the cache lacks along the way; one that
-   *  won't decode is left out, as if missing. The cards and the meta are read
-   *  once the images have loaded: a save landing meanwhile has moved the state
-   *  on, and cards read from before it would take that back. */
-  const readBack = async (changes: Changes | undefined) => {
+  /** Storage's images into the art cache. One stored since the cache last saw
+   *  it, new or replaced, is decoded; the rest are left alone, told by their
+   *  version. One the browser can't decode is left out, as if it were missing,
+   *  rather than failing the whole read. Returns whether the cache changed,
+   *  and the names it holds that storage no longer does: those are for the
+   *  caller to drop, after the cards. */
+  const loadImages = async (): Promise<{ changed: boolean; gone: string[] }> => {
     const { store, art } = getServices()
-    const images = new Map<string, StoredArt | undefined>()
-    if (changes) {
-      const names = [...new Set(changes.art)]
-      const stored = await Promise.all(names.map((name) => store.getArt(name)))
-      names.forEach((name, i) => images.set(name, stored[i]))
-    } else {
-      // those here go, unless they are still stored
-      for (const name of art.files()) images.set(name, undefined)
-      for (const a of await store.listArt()) images.set(a.name, a)
-    }
-
-    let artChanged = false
-    for (const [name, stored] of images) {
-      const cached = art.entry(name)
-      if (!stored || (cached && cached.version === stored.updatedAt)) continue
+    const stored = await store.listArt()
+    let changed = false
+    for (const image of stored) {
+      const cached = art.entry(image.name)
+      if (cached && cached.version === image.updatedAt) continue
       try {
-        await art.setBlob(name, stored.blob, stored.updatedAt)
-        artChanged = true
+        await art.setBlob(image.name, image.blob, image.updatedAt)
+        changed = true
       } catch {
-        // one the browser can't decode is as good as missing
         if (cached) {
-          art.remove(name)
-          artChanged = true
+          art.remove(image.name)
+          changed = true
         }
       }
     }
+    const names = new Set(stored.map((image) => image.name))
+    return { changed, gone: art.files().filter((name) => !names.has(name)) }
+  }
 
-    const cards = new Map<string, StoredCard | undefined>()
-    let meta: ProjectMeta | undefined
-    if (changes) {
-      const ids = [...new Set(changes.cards)]
-      const [stored, storedMeta] = await Promise.all([
-        Promise.all(ids.map((id) => store.getCard(id))),
-        changes.meta ? store.getMeta() : undefined,
-      ])
-      ids.forEach((id, i) => cards.set(id, stored[i]))
-      meta = storedMeta
-    } else {
-      // those here go, unless they are still stored
-      for (const c of get().cards) cards.set(c.id, undefined)
-      const [stored, storedMeta] = await Promise.all([store.listCards(), store.getMeta()])
-      for (const c of stored) cards.set(c.id, c)
-      meta = storedMeta
-    }
-
+  /** Storage's cards and meta into the state, applied in the same step the
+   *  read returns. */
+  const loadCards = async () => {
+    const { store } = getServices()
+    const [stored, meta] = await Promise.all([store.listCards(), store.getMeta()])
     const { cards: mine, currentId, text, savedText } = get()
-    // text typed into the current card and not yet saved stays
+    // Text typed into the open card and not yet saved wins over what storage
+    // has for it: its own save is still to come. Taking storage's text here
+    // would throw the typing away.
     const typing = text === savedText ? undefined : currentId
-    const byId = new Map(mine.map((c) => [c.id, c]))
-    for (const [id, stored] of cards) {
-      const here = byId.get(id)
-      if (!stored) {
-        byId.delete(id)
-        continue
-      }
-      const entry =
-        id === typing && here ? { ...here, sortIndex: stored.sortIndex } : toEntry(stored)
-      if (!here || !sameCard(here, entry)) byId.set(id, entry)
-    }
-    const next = [...byId.values()].sort(bySortIndex)
+    const here = new Map(mine.map((c) => [c.id, c]))
+    const next = stored
+      .map((card) => {
+        const held = here.get(card.id)
+        // likewise a card moved here whose new place isn't stored yet: taking
+        // storage's would put it back where it was dragged from
+        const sortIndex = moving.get(card.id) ?? card.sortIndex
+        const entry = { ...(card.id === typing && held ? held : toEntry(card)), sortIndex }
+        // a card that hasn't changed stays the same object, so that views of
+        // it don't draw again
+        return held && sameCard(held, entry) ? held : entry
+      })
+      .sort(bySortIndex)
     if (next.length !== mine.length || next.some((c, i) => c !== mine[i])) {
-      setCards(next, changes ? undefined : meta?.lastOpenCardId)
+      setCards(next, meta.lastOpenCardId)
     }
-    // the text kept is unsaved while it differs from what storage has now
-    const kept = typing === undefined ? undefined : cards.get(typing)
+    // The typing kept is unsaved against what storage has now, which another
+    // tab may have changed. Measured against the older text, typing that
+    // happens to match it would count as saved and never be stored.
+    const kept = typing === undefined ? undefined : stored.find((c) => c.id === typing)
     if (kept && kept.yamlText !== savedText) set({ savedText: kept.yamlText })
-    const dirty = meta?.dirtySinceExport ?? false
-    if (meta && dirty !== get().dirtySinceExport) set({ dirtySinceExport: dirty })
+    const dirty = meta.dirtySinceExport ?? false
+    if (dirty !== get().dirtySinceExport) set({ dirtySinceExport: dirty })
+  }
 
-    for (const [name, stored] of images) {
-      if (stored || !art.entry(name)) continue
-      art.remove(name)
-      artChanged = true
-    }
-    if (artChanged) set((s) => ({ artVersion: s.artVersion + 1 }))
+  /** Storage into the state and the art cache, in an order that keeps what is
+   *  on screen whole:
+   *  - New images load before the cards, and images gone are dropped after
+   *    them, so that no card shown names an image the cache lacks.
+   *  - The cards are read only once the images have loaded, which can take a
+   *    while. Read before, they could be older than a save made here in the
+   *    meantime, and applying them would take that save back. */
+  const readBack = async (changes: Changes | undefined) => {
+    const images = !changes || changes.art ? await loadImages() : undefined
+    await loadCards()
+    if (!images) return
+    for (const name of images.gone) getServices().art.remove(name)
+    if (images.changed || images.gone.length > 0) set((s) => ({ artVersion: s.artVersion + 1 }))
   }
 
   return {
@@ -382,12 +368,19 @@ export const useStore = create<AppState>((set, get) => {
       const [moved] = cards.splice(fromIndex, 1)
       cards.splice(Math.max(0, Math.min(toIndex, cards.length)), 0, moved)
       const renumbered = cards.map((c, i) => (c.sortIndex === i ? c : { ...c, sortIndex: i }))
-      set({ cards: renumbered })
       // the order alone: the text is as stored, or the editor's to save
-      const changed = renumbered.filter((c, i) => c !== cards[i])
-      await getServices().store.write({
-        updateCards: changed.map((c) => ({ id: c.id, sortIndex: c.sortIndex })),
-      })
+      const moves = renumbered
+        .filter((c, i) => c !== cards[i])
+        .map((c) => ({ id: c.id, sortIndex: c.sortIndex }))
+      // shown at once, and held against reads of storage until it is stored
+      for (const m of moves) moving.set(m.id, m.sortIndex)
+      set({ cards: renumbered })
+      try {
+        await getServices().store.write({ updateCards: moves })
+      } finally {
+        // unless a later move has taken the card elsewhere since
+        for (const m of moves) if (moving.get(m.id) === m.sortIndex) moving.delete(m.id)
+      }
     },
 
     async restoreSamples() {
