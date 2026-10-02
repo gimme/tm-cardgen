@@ -293,6 +293,15 @@ button {
   height: 100%;
 }
 
+/* on a touch screen, text fields at 16px: iOS zooms in on a smaller one when
+   it is focused */
+@media (pointer: coarse) {
+  .card-search,
+  .editor-host .cm-editor {
+    font-size: 16px;
+  }
+}
+
 .editor-status {
   display: flex;
   gap: 14px;
@@ -1219,10 +1228,12 @@ button {
 }
 
 /* the tile's box, which the card overflows until it is scaled down to it.
-   Laid out and painted only near the view, so a new width redraws the cards
-   on screen and not every card drawn so far */
+   Contained, so the card's unscaled width never widens the page. Laid out
+   and painted only near the view, so a new width redraws the cards on screen
+   and not every card drawn so far */
 .gallery-card {
   height: 100%;
+  contain: inline-size;
   content-visibility: auto;
 }
 
@@ -1378,6 +1389,14 @@ button {
   border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   white-space: nowrap;
+  max-width: calc(100vw - 32px);
+}
+
+/* a long card name is cut short, so the buttons stay on screen */
+.toast > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .toast button {
