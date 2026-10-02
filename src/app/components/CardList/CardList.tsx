@@ -34,7 +34,7 @@ export function CardList() {
   const newCard = useStore((s) => s.newCard)
   const duplicateCard = useStore((s) => s.duplicateCard)
   const deleteCards = useStore((s) => s.deleteCards)
-  const moveCard = useStore((s) => s.moveCard)
+  const moveCards = useStore((s) => s.moveCards)
   const [query, setQuery] = useState('')
   const [dragId, setDragId] = useState<string>()
   const [dropGap, setDropGap] = useState<number>()
@@ -101,7 +101,7 @@ export function CardList() {
         onDrop={(e) => {
           e.preventDefault()
           if (dragId !== undefined && dragging && dropGap !== undefined) {
-            void moveCard(dragId, indexForGap(dragIndex, dropGap))
+            void moveCards([dragId], indexForGap(dragIndex, dropGap))
           }
           endDrag()
         }}

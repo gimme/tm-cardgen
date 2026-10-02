@@ -63,7 +63,9 @@ export interface AppState {
   /** the cards the last delete took, back in their places */
   undoDelete(): Promise<void>
   dismissDeleted(): void
-  moveCard(id: string, toIndex: number): Promise<void>
+  /** the cards, in the order they show, together at `toIndex` among the
+   *  cards left once they are taken out */
+  moveCards(ids: readonly string[], toIndex: number): Promise<void>
   restoreSamples(): Promise<void>
   /** Storage read back into the state: the cards and the meta, and the images
    *  into the art cache unless `changes` says none changed. The current card
@@ -361,12 +363,12 @@ export const useStore = create<AppState>((set, get) => {
       set({ deleted: undefined })
     },
 
-    async moveCard(id, toIndex) {
-      const cards = [...get().cards]
-      const fromIndex = cards.findIndex((c) => c.id === id)
-      if (fromIndex === -1) return
-      const [moved] = cards.splice(fromIndex, 1)
-      cards.splice(Math.max(0, Math.min(toIndex, cards.length)), 0, moved)
+    async moveCards(ids, toIndex) {
+      const all = get().cards
+      const moved = all.filter((c) => ids.includes(c.id))
+      if (moved.length === 0) return
+      const cards = all.filter((c) => !ids.includes(c.id))
+      cards.splice(Math.max(0, Math.min(toIndex, cards.length)), 0, ...moved)
       const renumbered = cards.map((c, i) => (c.sortIndex === i ? c : { ...c, sortIndex: i }))
       // the order alone: the text is as stored, or the editor's to save
       const moves = renumbered

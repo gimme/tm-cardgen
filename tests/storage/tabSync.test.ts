@@ -319,7 +319,7 @@ it('typing while a save is stored leaves the newer text to save', async () => {
 it('a move stores the order alone, so it never takes back text another tab stored', async () => {
   await open('a', 'b')
   await store.write({ updateCards: [{ id: 'b', yamlText: 'name: b\ncost: 5\n' }] })
-  await useStore.getState().moveCard('b', 0)
+  await useStore.getState().moveCards(['b'], 0)
   expect(ids()).toEqual(['b', 'a'])
   expect(await store.getCard('b')).toMatchObject({ yamlText: 'name: b\ncost: 5\n', sortIndex: 0 })
   // and the move's own read back takes that text in
@@ -337,7 +337,7 @@ it("a move shows at once, and a read of storage already under way doesn't put it
   const orders = new Set<string>()
   const unfollow = useStore.subscribe((s) => orders.add(s.cards.map((c) => c.id).join()))
   try {
-    const moved = useStore.getState().moveCard('b', 0)
+    const moved = useStore.getState().moveCards(['b'], 0)
     expect(ids()).toEqual(['b', 'a'])
 
     await moved

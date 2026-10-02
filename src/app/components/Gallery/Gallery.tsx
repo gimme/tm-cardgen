@@ -3,6 +3,8 @@
 // view, and links to its editor page.
 // Ctrl/Cmd-click, Shift-click or a card's check starts a selection; while
 // there is one, a click adds or takes out a card instead of opening it.
+// A card dragged with the mouse moves, and a selected one moves the
+// selection: useCardDrag.ts.
 import {
   createContext,
   useCallback,
@@ -14,6 +16,7 @@ import {
   useState,
   type CSSProperties,
   type MouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type RefObject,
 } from 'react'
@@ -27,6 +30,7 @@ import { CARD_CORNER, CardSvg } from '../PreviewPane/CardSvg.tsx'
 import { extended, NO_SELECTION, toggled, without } from './selection.ts'
 import { CARD_WIDTH, stopOf, storedWidth, storeWidth, widthAt } from './size.ts'
 import { cachedTile } from './tile.ts'
+import { useCardDrag } from './useCardDrag.ts'
 
 // how far past the view a card starts to render, so a scroll finds it drawn
 const RENDER_MARGIN = '600px'
@@ -47,6 +51,7 @@ export function Gallery() {
   const newCard = useStore((s) => s.newCard)
   const duplicateCard = useStore((s) => s.duplicateCard)
   const deleteCards = useStore((s) => s.deleteCards)
+  const moveCards = useStore((s) => s.moveCards)
   const [sel, setSel] = useState(NO_SELECTION)
   const [cardWidth, setCardWidth] = useState(storedWidth)
   // a card to scroll into view once it is there: a new copy, say
@@ -60,7 +65,12 @@ export function Gallery() {
   const [menu, setMenu] = useState<{ id: string; at?: Point }>()
   const closeMenu = useCallback(() => setMenu(undefined), [])
   const scrollRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLUListElement>(null)
+  const holeRef = useRef<HTMLLIElement>(null)
   const gridWidth = useContentWidth(scrollRef)
+  const { held, press } = useCardDrag(gridRef, scrollRef, holeRef, order, (ids, gap) => {
+    void moveCards(ids, gap)
+  })
   const resolveAsset = useMemo(() => {
     const { art } = getServices()
     return makePreviewResolver((file) => art.url(file))
@@ -122,14 +132,19 @@ export function Gallery() {
   const tiles = useMemo(
     () =>
       cards.map((card, i) => {
-        // a card in a selection of more than one: its menu is the selection's
+        // a card in a selection of more than one: its menu and its drag are
+        // the selection's
         const group = selected.length > 1 && sel.ids.has(card.id) ? selected : undefined
+        // dragged, under the pointer or stacked under the card that is; or
+        // shown as under the pointer while its menu is open
+        const lifted = held?.leader === card.id
+        const folded = !lifted && held?.ids.includes(card.id)
+        const open = menu?.id === card.id
         return (
           <li
             key={card.id}
             data-card-id={card.id}
-            // shown as under the pointer while its menu is open
-            className={menu?.id === card.id ? 'menu-open' : undefined}
+            className={lifted ? 'lifted' : folded ? 'folded' : open ? 'menu-open' : undefined}
             onContextMenu={(e) => {
               // with Shift, the browser's own menu: a new tab, say
               if (e.shiftKey) return
@@ -137,6 +152,12 @@ export function Gallery() {
               setMenu({ id: card.id, at: { x: e.clientX, y: e.clientY } })
             }}
           >
+            {lifted && held.ids.length > 1 && (
+              <>
+                <span className="tile-stack" style={{ borderRadius: CARD_CORNER }} />
+                <span className="tile-count">{held.ids.length}</span>
+              </>
+            )}
             <TileCheck
               name={card.name}
               selected={sel.ids.has(card.id)}
@@ -154,6 +175,7 @@ export function Gallery() {
                 else return false
                 return true
               }}
+              onPress={(e) => press(e, card.id, group ?? [card.id])}
               scrollRef={scrollRef}
               resolveAsset={resolveAsset}
             />
@@ -182,6 +204,8 @@ export function Gallery() {
       order,
       selecting,
       menu,
+      held,
+      press,
       resolveAsset,
       remove,
       duplicate,
@@ -190,7 +214,7 @@ export function Gallery() {
   )
 
   return (
-    <main className="gallery">
+    <main className={`gallery ${held ? 'dragging' : ''}`}>
       <header className="gallery-bar">
         <div className="gallery-bar-side">
           {selecting ? (
@@ -234,9 +258,19 @@ export function Gallery() {
         ) : (
           <CardScale value={Math.min(cardWidth, gridWidth) / CARD_WIDTH.max}>
             <ul
+              ref={gridRef}
               className={`gallery-grid ${selecting ? 'selecting' : ''}`}
               style={{ '--card-w': `${cardWidth}px` } as CSSProperties}
             >
+              {/* first, so the cards making way pass over it */}
+              {held && (
+                <li
+                  ref={holeRef}
+                  className="gallery-hole"
+                  style={{ borderRadius: CARD_CORNER }}
+                  aria-hidden="true"
+                />
+              )}
               {tiles}
             </ul>
           </CardScale>
@@ -252,11 +286,14 @@ interface GalleryTileProps {
   selected: boolean
   /** a click that selects rather than opens: true when it took the click */
   onPick: (e: MouseEvent) => boolean
+  /** a press, which may start a drag */
+  onPress: (e: ReactPointerEvent) => void
   scrollRef: RefObject<HTMLElement | null>
   resolveAsset: (ref: AssetRef) => string
 }
 
-function GalleryTile({ card, slug, selected, onPick, scrollRef, resolveAsset }: GalleryTileProps) {
+function GalleryTile(props: GalleryTileProps) {
+  const { card, slug, selected, onPick, onPress, scrollRef, resolveAsset } = props
   const artVersion = useStore((s) => s.artVersion)
   const ref = useRef<HTMLAnchorElement>(null)
   const near = useNear(ref, scrollRef)
@@ -268,6 +305,7 @@ function GalleryTile({ card, slug, selected, onPick, scrollRef, resolveAsset }: 
     <a
       ref={ref}
       href={link.href}
+      onPointerDown={onPress}
       // a click leaves the focus where it was: on the card, the next key
       // pressed (Shift for a range, say) would show its keyboard focus ring
       onMouseDown={(e) => {

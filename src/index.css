@@ -1066,10 +1066,89 @@ button {
   padding: 0;
   /* a Shift-click selects cards, not the text between them */
   user-select: none;
+  /* the cards' offsets, which a drag places them by, are from the grid */
+  position: relative;
 }
 
+/* sliding as they make way for a dragged card, and into place once it is
+   dropped */
 .gallery-grid li {
   position: relative;
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0, 0, 1),
+    opacity 0.2s;
+}
+
+/* while a card is dragged, the pointer is the drag's: no card under it
+   shows its buttons */
+.gallery.dragging .gallery-grid {
+  pointer-events: none;
+}
+
+.gallery.dragging,
+.gallery.dragging * {
+  cursor: grabbing;
+}
+
+/* the dragged card, under the pointer and over the rest, raised off the
+   grid; at once wherever the pointer takes it */
+.gallery-grid li.lifted {
+  z-index: 4;
+  transition: none;
+}
+
+.gallery-grid li.lifted .gallery-tile {
+  transform: scale(1.04);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+}
+
+.gallery-grid li.lifted :is(.tile-check, .tile-menu) {
+  visibility: hidden;
+}
+
+/* the rest of a dragged selection, gone under its card */
+.gallery-grid li.folded {
+  opacity: 0;
+}
+
+/* under a card dragged with others, the edge of the next, pale as a card's
+   border */
+.tile-stack {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #c9ccd2;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  transform: translate(6%, 3%) rotate(5deg);
+}
+
+/* how many cards are dragged, on the corner the menu button leaves */
+.tile-count {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* where a dragged card would land; sized and placed by the drag */
+.gallery-grid .gallery-hole {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 2px dashed rgb(232 131 74 / 0.6);
+  background: rgb(232 131 74 / 0.06);
+  transition: none;
 }
 
 /* shaped like its card before the card renders, so the grid holds still */
@@ -1083,6 +1162,10 @@ button {
   padding: 0;
   background: var(--panel);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  /* picked up and put down */
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 
 .gallery-tile.selected {
@@ -1260,6 +1343,13 @@ button {
   .tile-check,
   .tile-menu-button {
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-grid li,
+  .gallery-tile {
+    transition: none;
   }
 }
 
