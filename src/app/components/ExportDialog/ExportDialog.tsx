@@ -98,6 +98,19 @@ export function ExportDialog() {
     }
   }
 
+  const restoreSamples = async () => {
+    setError(undefined)
+    setBusy(true)
+    try {
+      await useStore.getState().restoreSamples()
+      close()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="slideover-backdrop" onClick={close}>
       <div className="export-dialog" onClick={(e) => e.stopPropagation()}>
@@ -309,6 +322,18 @@ export function ExportDialog() {
                   e.target.value = ''
                 }}
               />
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    confirm('Re-insert the bundled sample cards? Your own cards are not touched.')
+                  )
+                    void restoreSamples()
+                }}
+              >
+                Restore samples
+              </button>
             </div>
           </>
         )}

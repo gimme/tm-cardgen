@@ -20,7 +20,6 @@ import {
   type MouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
-  type Ref,
   type RefObject,
 } from 'react'
 import type { AssetRef } from '../../../core/index.ts'
@@ -29,6 +28,7 @@ import { linkTo, openCard } from '../../router.ts'
 import { cardSlugs } from '../../store/cardName.ts'
 import { getServices, layoutContext } from '../../store/services.ts'
 import { useStore, type CardEntry } from '../../store/useStore.ts'
+import { Menu, MenuButton, type Action } from '../Menu/Menu.tsx'
 import { CARD_CORNER, CardSvg } from '../PreviewPane/CardSvg.tsx'
 import { extended, NO_SELECTION, toggled, without } from './selection.ts'
 import { CARD_WIDTH, stopOf, storedWidth, storeWidth, widthAt } from './size.ts'
@@ -43,13 +43,6 @@ const cardCount = (n: number) => `${n} card${n === 1 ? '' : 's'}`
 interface Point {
   x: number
   y: number
-}
-
-/** something to do with a card or the selection, as a button or in a menu */
-interface Action {
-  label: string
-  danger?: boolean
-  act: () => void
 }
 
 // from the width a card is laid out at, the slider's widest, to its tile's:
@@ -469,9 +462,6 @@ interface SelectionActionsProps {
 /** the selection's actions in a row of buttons, or in a ⋮ menu where the
  *  bar is too narrow for the row; the CSS shows the one that fits */
 function SelectionActions({ actions }: SelectionActionsProps) {
-  const [open, setOpen] = useState(false)
-  const close = useCallback(() => setOpen(false), [])
-  const ref = useRef<HTMLDivElement>(null)
   return (
     <>
       <div className="selection-actions">
@@ -486,23 +476,7 @@ function SelectionActions({ actions }: SelectionActionsProps) {
           </button>
         ))}
       </div>
-      <div className="selection-menu" ref={ref}>
-        <button
-          type="button"
-          aria-label="Selection actions"
-          aria-haspopup="menu"
-          aria-expanded={open}
-          onClick={() => setOpen((o) => !o)}
-        >
-          {/* drawn rather than a ⋮, which each font seats off the middle */}
-          <svg viewBox="0 0 4 16" width="4" height="16" aria-hidden="true">
-            <circle cx="2" cy="3" r="1.5" fill="currentColor" />
-            <circle cx="2" cy="8" r="1.5" fill="currentColor" />
-            <circle cx="2" cy="13" r="1.5" fill="currentColor" />
-          </svg>
-        </button>
-        {open && <Menu items={actions} within={ref} onClose={close} />}
-      </div>
+      <MenuButton items={actions} label="Selection actions" className="selection-menu" />
     </>
   )
 }
@@ -546,66 +520,6 @@ function TileMenu({ at, bounds, items, onClose }: TileMenuProps) {
         ref={itemsRef}
         style={place && { left: place.x, top: place.y }}
       />
-    </div>
-  )
-}
-
-interface MenuProps {
-  items: readonly Action[]
-  /** what a click in leaves the menu open: the menu and its button */
-  within: RefObject<HTMLElement | null>
-  onClose: () => void
-  ref?: Ref<HTMLDivElement>
-  style?: CSSProperties
-}
-
-/** a menu of actions, closed by picking one, a click outside it or Escape */
-function Menu({ items, within, onClose, ref, style }: MenuProps) {
-  useEffect(() => {
-    const onPointer = (e: PointerEvent) => {
-      if (!within.current?.contains(e.target as Node)) onClose()
-    }
-    // on the document, so it runs before the gallery's Escape on the window
-    // and stops it: this Escape closes the menu only
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      e.stopPropagation()
-      onClose()
-    }
-    document.addEventListener('pointerdown', onPointer)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [within, onClose])
-
-  return (
-    <div
-      className="menu-items"
-      role="menu"
-      ref={ref}
-      style={style}
-      // a right-click on the menu leaves it where it is
-      onContextMenu={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-      }}
-    >
-      {items.map((item) => (
-        <button
-          key={item.label}
-          type="button"
-          role="menuitem"
-          className={item.danger ? 'danger' : undefined}
-          onClick={() => {
-            onClose()
-            item.act()
-          }}
-        >
-          {item.label}
-        </button>
-      ))}
     </div>
   )
 }
