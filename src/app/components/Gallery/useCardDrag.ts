@@ -1,7 +1,8 @@
 // Dragging cards about the gallery, to put them in another order. A card
-// pressed and moved with the mouse follows it, raised over the rest, which
-// make way where it would land, around a dashed hole; dropped, it settles
-// into the hole. A card in a selection of more than one brings the rest of
+// pressed and moved with the mouse, or held with a finger and then moved,
+// follows it, raised over the rest, which make way where it would land,
+// around a dashed hole; dropped, it settles into the hole. A card held and
+// let go without moving is picked instead. A card in a selection of more than one brings the rest of
 // the selection, stacked under it, and they spread out after it once it is
 // dropped. Near the view's top or bottom, or past it, the view scrolls;
 // Escape puts every card back.
@@ -21,6 +22,10 @@ import { dropped, edgeScroll, gapAt, heldSlots, nearestSlot, type Point } from '
 
 // how far the mouse moves with its button down before a press is a drag
 const THRESHOLD = 5
+// how long a finger rests on a card before it holds it, and how far it may
+// stray meanwhile: further, it is scrolling the view
+const HOLD = 450
+const HOLD_SLOP = 8
 // how near the view's top or bottom a drag scrolls it, and how fast at
 // most, in px a frame
 const EDGE = 60
@@ -159,25 +164,68 @@ function swallowClick() {
 }
 
 /** `press`, on a pointerdown on a card, starts a drag of `ids` by `leader`
- *  once the mouse moves far enough; `held` is what is dragged meanwhile.
- *  A drop that moves the cards calls `onDrop` with them and the gap they
- *  land in, among the cards that stay. */
+ *  once the mouse moves far enough, or a finger that has held the card
+ *  does; `held` is what is dragged meanwhile, and `holding` the card a
+ *  finger holds before it moves. A drop that moves the cards calls `onDrop`
+ *  with them and the gap they land in, among the cards that stay; a card
+ *  held and let go calls `onPick` with it. */
 export function useCardDrag(
   gridRef: RefObject<HTMLElement | null>,
   scrollRef: RefObject<HTMLElement | null>,
   holeRef: RefObject<HTMLElement | null>,
   order: readonly string[],
   onDrop: (ids: readonly string[], gap: number) => void,
+  onPick: (id: string) => void,
 ) {
   const [held, setHeld] = useState<Held>()
+  const [holding, setHolding] = useState<string>()
   const drag = useRef<Drag>(undefined)
   // a press not yet a drag, called to forget it
   const pending = useRef<() => void>(undefined)
-  const latest = useRef({ order, onDrop })
+  // a finger is on a card; and it has held it, so it no longer scrolls the
+  // view, and its lift is no tap
+  const touching = useRef(false)
+  const claimed = useRef(false)
+  const latest = useRef({ order, onDrop, onPick })
 
   useLayoutEffect(() => {
-    latest.current = { order, onDrop }
+    latest.current = { order, onDrop, onPick }
   })
+
+  // A finger that has held a card doesn't scroll the view, its lift makes no
+  // click, and the menu a long press opens on Android is the hold's. Heard
+  // from the start rather than once a card is held: iOS, for one, lets a
+  // touchmove's preventDefault stop a scroll only from a listener that was
+  // there before the touch began.
+  useEffect(() => {
+    const view = scrollRef.current
+    if (!view) return
+    const onTouchMove = (e: TouchEvent) => {
+      if (claimed.current && e.cancelable) e.preventDefault()
+    }
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length > 0) return
+      if (claimed.current && e.cancelable) e.preventDefault()
+      touching.current = false
+      claimed.current = false
+    }
+    // before the card's own, which would open its menu
+    const onContextMenu = (e: MouseEvent) => {
+      if (!touching.current) return
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    view.addEventListener('touchmove', onTouchMove, { passive: false })
+    view.addEventListener('touchend', onTouchEnd, { passive: false })
+    view.addEventListener('touchcancel', onTouchEnd)
+    view.addEventListener('contextmenu', onContextMenu, true)
+    return () => {
+      view.removeEventListener('touchmove', onTouchMove)
+      view.removeEventListener('touchend', onTouchEnd)
+      view.removeEventListener('touchcancel', onTouchEnd)
+      view.removeEventListener('contextmenu', onContextMenu, true)
+    }
+  }, [scrollRef])
 
   useLayoutEffect(() => {
     // the cards changed under the drag, by another tab say: it ends there,
@@ -290,9 +338,65 @@ export function useCardDrag(
     [gridRef, scrollRef, holeRef, end],
   )
 
+  /** a finger on a card: held once it rests there long enough, and then
+   *  moved to drag `ids`, or let go to pick the card */
+  const hold = useCallback(
+    (e: ReactPointerEvent, leader: string, ids: readonly string[]) => {
+      const finger = e.pointerId
+      const start = { x: e.clientX, y: e.clientY }
+      let rested = false
+      const timer = setTimeout(() => {
+        rested = true
+        claimed.current = true
+        setHolding(leader)
+      }, HOLD)
+      // a finger that moves before it has held the card is scrolling, and
+      // the browser cancels it once the view moves
+      const onMove = (m: PointerEvent) => {
+        if (m.pointerId !== finger) return
+        const far = Math.hypot(m.clientX - start.x, m.clientY - start.y)
+        if (!rested) {
+          if (far > HOLD_SLOP) forget()
+        } else if (far >= THRESHOLD) {
+          forget()
+          begin(leader, ids, start, { x: m.clientX, y: m.clientY })
+        }
+      }
+      const onUp = (u: PointerEvent) => {
+        if (u.pointerId !== finger) return
+        forget()
+        if (rested) latest.current.onPick(leader)
+      }
+      const onCancel = (c: PointerEvent) => {
+        if (c.pointerId === finger) forget()
+      }
+      const forget = () => {
+        clearTimeout(timer)
+        pending.current = undefined
+        if (rested) setHolding(undefined)
+        window.removeEventListener('pointermove', onMove)
+        window.removeEventListener('pointerup', onUp)
+        window.removeEventListener('pointercancel', onCancel)
+      }
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+      window.addEventListener('pointercancel', onCancel)
+      pending.current = forget
+    },
+    [begin],
+  )
+
   const press = useCallback(
     (e: ReactPointerEvent, leader: string, ids: readonly string[]) => {
-      if (e.pointerType !== 'mouse' || e.button !== 0 || drag.current) return
+      touching.current = e.pointerType === 'touch'
+      if (drag.current) return
+      if (e.pointerType === 'touch') {
+        pending.current?.()
+        claimed.current = false
+        hold(e, leader, ids)
+        return
+      }
+      if (e.pointerType !== 'mouse' || e.button !== 0) return
       pending.current?.()
       const start = { x: e.clientX, y: e.clientY }
       const onMove = (m: PointerEvent) => {
@@ -311,8 +415,8 @@ export function useCardDrag(
       window.addEventListener('pointercancel', forget)
       pending.current = forget
     },
-    [begin],
+    [begin, hold],
   )
 
-  return { held, press }
+  return { held, holding, press }
 }

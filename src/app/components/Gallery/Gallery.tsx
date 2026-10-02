@@ -1,10 +1,12 @@
 // The gallery page: every card at once, as the preview draws it, at the
 // width picked on the bar's slider. A card renders once it scrolls near the
 // view, and links to its editor page.
-// Ctrl/Cmd-click, Shift-click or a card's check starts a selection; while
-// there is one, a click adds or takes out a card instead of opening it.
-// A card dragged with the mouse moves, and a selected one moves the
-// selection: useCardDrag.ts.
+// Ctrl/Cmd-click, Shift-click, Select in a card's menu or a long press on
+// a touch screen starts a selection. While there is one, each card shows its
+// check, a click or tap adds or takes out a card instead of opening it, and
+// the bar holds what can be done with the selection.
+// A card dragged, with the mouse or a finger held on it, moves, and a
+// selected one moves the selection: useCardDrag.ts.
 import {
   createContext,
   useCallback,
@@ -18,6 +20,7 @@ import {
   type MouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type Ref,
   type RefObject,
 } from 'react'
 import type { AssetRef } from '../../../core/index.ts'
@@ -42,6 +45,13 @@ interface Point {
   y: number
 }
 
+/** something to do with a card or the selection, as a button or in a menu */
+interface Action {
+  label: string
+  danger?: boolean
+  act: () => void
+}
+
 // from the width a card is laid out at, the slider's widest, to its tile's:
 // the width picked on the slider, or the view's where that is narrower
 const CardScale = createContext(1)
@@ -60,17 +70,21 @@ export function Gallery() {
   const order = useMemo(() => cards.map((c) => c.id), [cards])
   const selected = useMemo(() => order.filter((id) => sel.ids.has(id)), [order, sel])
   const selecting = selected.length > 0
-  // the card whose menu is open: at the pointer that right-clicked it, or
-  // under its ⋮ button
-  const [menu, setMenu] = useState<{ id: string; at?: Point }>()
+  // the card whose menu is open, at the pointer that right-clicked it
+  const [menu, setMenu] = useState<{ id: string; at: Point }>()
   const closeMenu = useCallback(() => setMenu(undefined), [])
   const scrollRef = useRef<HTMLDivElement>(null)
   const gridRef = useRef<HTMLUListElement>(null)
   const holeRef = useRef<HTMLLIElement>(null)
   const gridWidth = useContentWidth(scrollRef)
-  const { held, press } = useCardDrag(gridRef, scrollRef, holeRef, order, (ids, gap) => {
-    void moveCards(ids, gap)
-  })
+  const { held, holding, press } = useCardDrag(
+    gridRef,
+    scrollRef,
+    holeRef,
+    order,
+    (ids, gap) => void moveCards(ids, gap),
+    (id) => setSel((s) => toggled(s, id)),
+  )
   const resolveAsset = useMemo(() => {
     const { art } = getServices()
     return makePreviewResolver((file) => art.url(file))
@@ -93,17 +107,6 @@ export function Gallery() {
     setReveal(undefined)
   }, [reveal, cards])
 
-  // Escape ends the selection, unless it is closing a dialog over the gallery
-  useEffect(() => {
-    if (!selecting) return
-    const onKey = (e: KeyboardEvent) => {
-      const { artManagerOpen, exportDialogOpen } = useStore.getState()
-      if (e.key === 'Escape' && !artManagerOpen && !exportDialogOpen) setSel(NO_SELECTION)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [selecting])
-
   const remove = useCallback(
     (ids: string[]) => {
       setSel((s) => without(s, ids))
@@ -111,6 +114,21 @@ export function Gallery() {
     },
     [deleteCards],
   )
+
+  // Escape ends the selection and Delete deletes it, unless the key is for a
+  // dialog over the gallery
+  useEffect(() => {
+    if (!selecting) return
+    const onKey = (e: KeyboardEvent) => {
+      const { artManagerOpen, exportDialogOpen } = useStore.getState()
+      if (artManagerOpen || exportDialogOpen) return
+      if (e.key === 'Escape') setSel(NO_SELECTION)
+      // Backspace too, which a Mac's delete key sends
+      else if (e.key === 'Delete' || e.key === 'Backspace') remove(selected)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selecting, selected, remove])
 
   const duplicate = useCallback(
     async (id: string) => {
@@ -136,15 +154,15 @@ export function Gallery() {
         // the selection's
         const group = selected.length > 1 && sel.ids.has(card.id) ? selected : undefined
         // dragged, under the pointer or stacked under the card that is; or
-        // shown as under the pointer while its menu is open
+        // held by a finger, which has yet to move it
         const lifted = held?.leader === card.id
         const folded = !lifted && held?.ids.includes(card.id)
-        const open = menu?.id === card.id
+        const raised = holding === card.id
         return (
           <li
             key={card.id}
             data-card-id={card.id}
-            className={lifted ? 'lifted' : folded ? 'folded' : open ? 'menu-open' : undefined}
+            className={lifted ? 'lifted' : folded ? 'folded' : raised ? 'holding' : undefined}
             onContextMenu={(e) => {
               // with Shift, the browser's own menu: a new tab, say
               if (e.shiftKey) return
@@ -158,13 +176,15 @@ export function Gallery() {
                 <span className="tile-count">{held.ids.length}</span>
               </>
             )}
-            <TileCheck
-              name={card.name}
-              selected={sel.ids.has(card.id)}
-              onPick={(e) =>
-                setSel((s) => (e.shiftKey ? extended(s, order, card.id) : toggled(s, card.id)))
-              }
-            />
+            {selecting && (
+              <TileCheck
+                name={card.name}
+                selected={sel.ids.has(card.id)}
+                onPick={(e) =>
+                  setSel((s) => (e.shiftKey ? extended(s, order, card.id) : toggled(s, card.id)))
+                }
+              />
+            )}
             <GalleryTile
               card={card}
               slug={slugs[i]}
@@ -179,20 +199,25 @@ export function Gallery() {
               scrollRef={scrollRef}
               resolveAsset={resolveAsset}
             />
-            <TileMenu
-              open={menu?.id === card.id}
-              at={menu?.id === card.id ? menu.at : undefined}
-              bounds={scrollRef}
-              count={group?.length ?? 1}
-              onToggle={() =>
-                setMenu((m) =>
-                  m?.id === card.id && m.at === undefined ? undefined : { id: card.id },
-                )
-              }
-              onClose={closeMenu}
-              onDuplicate={() => void duplicate(card.id)}
-              onDelete={() => remove(group ?? [card.id])}
-            />
+            {menu?.id === card.id && (
+              <TileMenu
+                at={menu.at}
+                bounds={scrollRef}
+                onClose={closeMenu}
+                items={[
+                  ...(sel.ids.has(card.id)
+                    ? []
+                    : [{ label: 'Select', act: () => setSel((s) => toggled(s, card.id)) }]),
+                  // the selection's can't be duplicated
+                  ...(group ? [] : [{ label: 'Duplicate', act: () => void duplicate(card.id) }]),
+                  {
+                    label: group ? `Delete ${cardCount(group.length)}` : 'Delete',
+                    danger: true,
+                    act: () => remove(group ?? [card.id]),
+                  },
+                ]}
+              />
+            )}
           </li>
         )
       }),
@@ -205,6 +230,7 @@ export function Gallery() {
       selecting,
       menu,
       held,
+      holding,
       press,
       resolveAsset,
       remove,
@@ -227,7 +253,6 @@ export function Gallery() {
                 ✕
               </button>
               <span>{selected.length} selected</span>
-              <span className="gallery-hint">click cards to add or take out</span>
             </>
           ) : (
             <span className="gallery-hint">{cardCount(cards.length)}</span>
@@ -242,9 +267,23 @@ export function Gallery() {
         />
         <div className="gallery-bar-side end">
           {selecting ? (
-            <button type="button" className="danger" onClick={() => remove(selected)}>
-              Delete
-            </button>
+            <SelectionActions
+              actions={[
+                // done with the selection once duplicated
+                ...(selected.length === 1
+                  ? [
+                      {
+                        label: 'Duplicate',
+                        act: () => {
+                          setSel(NO_SELECTION)
+                          void duplicate(selected[0])
+                        },
+                      },
+                    ]
+                  : []),
+                { label: 'Delete', danger: true, act: () => remove(selected) },
+              ]}
+            />
           ) : (
             <button type="button" onClick={() => void create()}>
               + New card
@@ -259,7 +298,7 @@ export function Gallery() {
           <CardScale value={Math.min(cardWidth, gridWidth) / CARD_WIDTH.max}>
             <ul
               ref={gridRef}
-              className={`gallery-grid ${selecting ? 'selecting' : ''}`}
+              className="gallery-grid"
               style={{ '--card-w': `${cardWidth}px` } as CSSProperties}
             >
               {/* first, so the cards making way pass over it */}
@@ -305,6 +344,8 @@ function GalleryTile(props: GalleryTileProps) {
     <a
       ref={ref}
       href={link.href}
+      // a finger held on the card holds the card, not the link
+      draggable={false}
       onPointerDown={onPress}
       // a click leaves the focus where it was: on the card, the next key
       // pressed (Shift for a range, say) would show its keyboard focus ring
@@ -421,29 +462,66 @@ function TileCheck({ name, selected, onPick }: TileCheckProps) {
   )
 }
 
-interface TileMenuProps {
-  open: boolean
-  /** the pointer that right-clicked the card, in the view; without it, the
-   *  menu hangs under the ⋮ button */
-  at?: Point
-  /** the view a menu at the pointer turns back from, where it would run out */
-  bounds: RefObject<HTMLElement | null>
-  /** how many cards it acts on: more than one for a card in a selection */
-  count: number
-  onToggle: () => void
-  onClose: () => void
-  onDuplicate: () => void
-  onDelete: () => void
+interface SelectionActionsProps {
+  actions: readonly Action[]
 }
 
-/** a card's menu, from its ⋮ button or a right-click, closed by a click
- *  outside it or Escape. For a card in a selection of more than one, it
- *  acts on the whole selection, which it can't duplicate */
-function TileMenu(props: TileMenuProps) {
-  const { open, at, bounds, count, onToggle, onClose, onDuplicate, onDelete } = props
+/** the selection's actions in a row of buttons, or in a ⋮ menu where the
+ *  bar is too narrow for the row; the CSS shows the one that fits */
+function SelectionActions({ actions }: SelectionActionsProps) {
+  const [open, setOpen] = useState(false)
+  const close = useCallback(() => setOpen(false), [])
+  const ref = useRef<HTMLDivElement>(null)
+  return (
+    <>
+      <div className="selection-actions">
+        {actions.map((a) => (
+          <button
+            key={a.label}
+            type="button"
+            className={a.danger ? 'danger' : undefined}
+            onClick={a.act}
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
+      <div className="selection-menu" ref={ref}>
+        <button
+          type="button"
+          aria-label="Selection actions"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+        >
+          {/* drawn rather than a ⋮, which each font seats off the middle */}
+          <svg viewBox="0 0 4 16" width="4" height="16" aria-hidden="true">
+            <circle cx="2" cy="3" r="1.5" fill="currentColor" />
+            <circle cx="2" cy="8" r="1.5" fill="currentColor" />
+            <circle cx="2" cy="13" r="1.5" fill="currentColor" />
+          </svg>
+        </button>
+        {open && <Menu items={actions} within={ref} onClose={close} />}
+      </div>
+    </>
+  )
+}
+
+interface TileMenuProps {
+  /** the pointer that right-clicked the card, in the window */
+  at: Point
+  /** the view the menu turns back from, where it would run out */
+  bounds: RefObject<HTMLElement | null>
+  items: readonly Action[]
+  onClose: () => void
+}
+
+/** a card's menu, at the pointer that right-clicked it. For a card in a
+ *  selection of more than one, it acts on the whole selection */
+function TileMenu({ at, bounds, items, onClose }: TileMenuProps) {
   const ref = useRef<HTMLDivElement>(null)
   const itemsRef = useRef<HTMLDivElement>(null)
-  // where a menu at the pointer sits, from this menu's corner
+  // where the menu sits, from the card's corner
   const [place, setPlace] = useState<Point>()
 
   // from the pointer down and right, or up or left where it would run out of
@@ -452,20 +530,40 @@ function TileMenu(props: TileMenuProps) {
     const corner = ref.current?.getBoundingClientRect()
     const items = itemsRef.current?.getBoundingClientRect()
     const view = bounds.current
-    if (!at || !corner || !items || !view) {
-      setPlace(undefined)
-      return
-    }
+    if (!corner || !items || !view) return
     const { left, top } = view.getBoundingClientRect()
     const x = at.x + items.width > left + view.clientWidth ? at.x - items.width : at.x
     const y = at.y + items.height > top + view.clientHeight ? at.y - items.height : at.y
     setPlace({ x: x - corner.left, y: y - corner.top })
   }, [at, bounds])
 
+  return (
+    <div className="tile-menu" ref={ref}>
+      <Menu
+        items={items}
+        within={ref}
+        onClose={onClose}
+        ref={itemsRef}
+        style={place && { left: place.x, top: place.y }}
+      />
+    </div>
+  )
+}
+
+interface MenuProps {
+  items: readonly Action[]
+  /** what a click in leaves the menu open: the menu and its button */
+  within: RefObject<HTMLElement | null>
+  onClose: () => void
+  ref?: Ref<HTMLDivElement>
+  style?: CSSProperties
+}
+
+/** a menu of actions, closed by picking one, a click outside it or Escape */
+function Menu({ items, within, onClose, ref, style }: MenuProps) {
   useEffect(() => {
-    if (!open) return
     const onPointer = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) onClose()
+      if (!within.current?.contains(e.target as Node)) onClose()
     }
     // on the document, so it runs before the gallery's Escape on the window
     // and stops it: this Escape closes the menu only
@@ -480,52 +578,34 @@ function TileMenu(props: TileMenuProps) {
       document.removeEventListener('pointerdown', onPointer)
       document.removeEventListener('keydown', onKey)
     }
-  }, [open, onClose])
-
-  const pick = (action: () => void) => () => {
-    onClose()
-    action()
-  }
+  }, [within, onClose])
 
   return (
-    <div className={`tile-menu ${open ? 'open' : ''}`} ref={ref}>
-      <button
-        type="button"
-        className="tile-menu-button"
-        aria-label="Card actions"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={onToggle}
-      >
-        {/* drawn rather than a ⋮, which each font seats off the middle */}
-        <svg viewBox="0 0 4 16" width="4" height="16" aria-hidden="true">
-          <circle cx="2" cy="3" r="1.5" fill="currentColor" />
-          <circle cx="2" cy="8" r="1.5" fill="currentColor" />
-          <circle cx="2" cy="13" r="1.5" fill="currentColor" />
-        </svg>
-      </button>
-      {open && (
-        <div
-          className="tile-menu-items"
-          role="menu"
-          ref={itemsRef}
-          style={place && { left: place.x, top: place.y, right: 'auto' }}
-          // a right-click on the menu leaves it where it is
-          onContextMenu={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
+    <div
+      className="menu-items"
+      role="menu"
+      ref={ref}
+      style={style}
+      // a right-click on the menu leaves it where it is
+      onContextMenu={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      }}
+    >
+      {items.map((item) => (
+        <button
+          key={item.label}
+          type="button"
+          role="menuitem"
+          className={item.danger ? 'danger' : undefined}
+          onClick={() => {
+            onClose()
+            item.act()
           }}
         >
-          {count === 1 && (
-            <button type="button" role="menuitem" onClick={pick(onDuplicate)}>
-              Duplicate
-            </button>
-          )}
-          <button type="button" role="menuitem" className="danger" onClick={pick(onDelete)}>
-            {count === 1 ? 'Delete' : `Delete ${cardCount(count)}`}
-          </button>
-        </div>
-      )}
+          {item.label}
+        </button>
+      ))}
     </div>
   )
 }

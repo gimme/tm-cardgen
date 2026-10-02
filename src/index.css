@@ -925,7 +925,7 @@ button {
   white-space: nowrap;
 }
 
-.gallery-bar button {
+.gallery-bar button:not([role='menuitem']) {
   padding: 3px 10px;
   border-radius: 4px;
   background: var(--panel-2);
@@ -933,11 +933,11 @@ button {
 }
 
 .gallery-bar button.danger,
-.tile-menu-items button.danger {
+.menu-items button.danger {
   color: #ffb3b3;
 }
 
-.gallery-bar button.danger {
+.gallery-bar button.danger:not([role='menuitem']) {
   background: #5d2424;
 }
 
@@ -957,6 +957,42 @@ button {
 
 .gallery-bar-side.end {
   justify-content: flex-end;
+  container: bar-end / inline-size;
+}
+
+/* the selection's actions in a row, or in a ⋮ menu where the bar's side is
+   too narrow for the row */
+.selection-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.selection-menu {
+  display: none;
+  position: relative;
+  /* its menu over the cards, a lifted one too */
+  z-index: 10;
+}
+
+.selection-menu > button {
+  display: grid;
+  place-items: center;
+  height: 22px;
+}
+
+.selection-menu .menu-items {
+  top: calc(100% + 4px);
+  right: 0;
+}
+
+@container bar-end (max-width: 150px) {
+  .selection-actions {
+    display: none;
+  }
+
+  .selection-menu {
+    display: block;
+  }
 }
 
 /* the size slider, between a small card and a large one */
@@ -1064,7 +1100,8 @@ button {
   list-style: none;
   margin: 0;
   padding: 0;
-  /* a Shift-click selects cards, not the text between them */
+  /* a Shift-click or a long press selects cards, not the text on them */
+  -webkit-user-select: none;
   user-select: none;
   /* the cards' offsets, which a drag places them by, are from the grid */
   position: relative;
@@ -1097,7 +1134,8 @@ button {
   transition: none;
 }
 
-.gallery-grid li.lifted .gallery-tile {
+/* raised by a finger held on it too, before it moves */
+.gallery-grid li:is(.lifted, .holding) .gallery-tile {
   transform: scale(1.04);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
 }
@@ -1122,7 +1160,7 @@ button {
   transform: translate(6%, 3%) rotate(5deg);
 }
 
-/* how many cards are dragged, on the corner the menu button leaves */
+/* how many cards are dragged, on the card's top-right corner */
 .tile-count {
   position: absolute;
   top: -10px;
@@ -1162,6 +1200,8 @@ button {
   padding: 0;
   background: var(--panel);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  /* held, a card on a touch screen, not a link with a preview to show */
+  -webkit-touch-callout: none;
   /* picked up and put down */
   transition:
     transform 0.15s,
@@ -1231,8 +1271,7 @@ button {
   color: var(--error);
 }
 
-/* on a bottom corner, always shown: the top ones hold the buttons shown on
-   hover */
+/* on a bottom corner, always shown: the top-left holds the check */
 .gallery-warn {
   position: absolute;
   bottom: -8px;
@@ -1256,9 +1295,8 @@ button {
   color: var(--muted);
 }
 
-/* on the card's top-left corner, like the menu on its top-right: above the
-   card, shown on hover or while the card's menu is open, and on every card
-   while there is a selection */
+/* on the card's top-left corner, above the card, on every card while there
+   is a selection */
 .tile-check {
   position: absolute;
   top: -10px;
@@ -1274,8 +1312,6 @@ button {
   background: var(--panel-2);
   color: var(--muted);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  transition: opacity 0.1s;
 }
 
 .tile-check:hover {
@@ -1288,62 +1324,13 @@ button {
   color: var(--bg);
 }
 
-.gallery-grid li:hover .tile-check,
-.gallery-grid li.menu-open .tile-check,
-.gallery-grid.selecting .tile-check,
-.tile-check:focus-visible {
-  opacity: 1;
-}
-
-/* on the card's corner, clear of what is printed there; above the cards
-   after it, and an open one above the other menus. Only the round button
-   and the open menu take the pointer: the square around the button would
-   catch a click on the card under its corner and do nothing with it */
+/* where the card's menu is placed from, its top-left corner; above the cards
+   after it */
 .tile-menu {
   position: absolute;
-  top: -10px;
-  right: -10px;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.tile-menu > * {
-  pointer-events: auto;
-}
-
-.tile-menu.open {
+  top: 0;
+  left: 0;
   z-index: 3;
-}
-
-/* shown over a card on hover, and while its menu is open */
-.tile-menu-button {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--panel-2);
-  color: var(--text);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  transition: opacity 0.1s;
-}
-
-.gallery-grid li:hover .tile-menu-button,
-.gallery-grid li.menu-open .tile-menu-button,
-.tile-menu-button:focus-visible {
-  opacity: 1;
-}
-
-/* with no hover to show them, a touch screen always has the check and the
-   menu button to tap */
-@media (hover: none) {
-  .tile-check,
-  .tile-menu-button {
-    opacity: 1;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1353,10 +1340,8 @@ button {
   }
 }
 
-.tile-menu-items {
+.menu-items {
   position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
   display: flex;
   flex-direction: column;
   min-width: 140px;
@@ -1367,13 +1352,13 @@ button {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-.tile-menu-items button {
+.menu-items button {
   padding: 6px 10px;
   border-radius: 4px;
   text-align: left;
 }
 
-.tile-menu-items button:hover {
+.menu-items button:hover {
   background: var(--panel-2);
 }
 
