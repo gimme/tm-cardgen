@@ -75,8 +75,12 @@ export function Gallery() {
     if (currentId !== undefined) tileOf(currentId)?.scrollIntoView({ block: 'center' })
   }, [])
 
+  // once: the next change to the cards, a move say, leaves the view be
   useEffect(() => {
-    if (reveal !== undefined) tileOf(reveal)?.scrollIntoView({ block: 'nearest' })
+    const tile = reveal === undefined ? undefined : tileOf(reveal)
+    if (!tile) return
+    tile.scrollIntoView({ block: 'nearest' })
+    setReveal(undefined)
   }, [reveal, cards])
 
   // Escape ends the selection, unless it is closing a dialog over the gallery
