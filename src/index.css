@@ -260,6 +260,12 @@ button {
   outline: 1px solid var(--border);
 }
 
+/* the row the arrow keys go on from, once they are in use */
+.card-list li button:focus-visible {
+  outline: 1px solid var(--text);
+  outline-offset: -1px;
+}
+
 .type-swatch {
   width: 10px;
   height: 10px;
