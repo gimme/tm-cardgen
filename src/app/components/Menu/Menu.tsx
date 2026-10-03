@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -80,21 +81,50 @@ interface MenuButtonProps {
   /** the button's name, for a screen reader */
   label: string
   className: string
+  /** -1 leaves the button out of the tab order */
+  tabIndex?: number
+  /** the view the menu turns up from, where under the button it would run
+   *  out of it */
+  bounds?: RefObject<HTMLElement | null>
 }
 
-/** a ⋮ button, and the menu of `items` it opens under it */
-export function MenuButton({ items, label, className }: MenuButtonProps) {
+/** a ⋮ button, and the menu of `items` it opens under it, or over it where
+ *  `bounds` has no room below. Closing, the menu hands the focus it holds
+ *  back to the button, rather than losing it */
+export function MenuButton({ items, label, className, tabIndex, bounds }: MenuButtonProps) {
   const [open, setOpen] = useState(false)
-  const close = useCallback(() => setOpen(false), [])
+  const [up, setUp] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const close = useCallback(() => {
+    if (ref.current?.contains(document.activeElement)) buttonRef.current?.focus()
+    setOpen(false)
+  }, [])
+
+  // measured under the button before it paints, so it doesn't jump
+  useLayoutEffect(() => {
+    const view = bounds?.current
+    const menu = menuRef.current
+    if (!open || !view || !menu) return
+    const { top } = view.getBoundingClientRect()
+    if (menu.getBoundingClientRect().bottom > top + view.clientHeight) setUp(true)
+  }, [open, bounds])
+
   return (
-    <div className={`menu-button ${className}`} ref={ref}>
+    <div className={`menu-button ${className}${up ? ' up' : ''}`} ref={ref}>
       <button
+        ref={buttonRef}
         type="button"
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        tabIndex={tabIndex}
+        onClick={() => {
+          setOpen((o) => !o)
+          // under the button again, to be measured there
+          setUp(false)
+        }}
       >
         {/* drawn rather than a ⋮, which each font seats off the middle */}
         <svg viewBox="0 0 4 16" width="4" height="16" aria-hidden="true">
@@ -103,7 +133,7 @@ export function MenuButton({ items, label, className }: MenuButtonProps) {
           <circle cx="2" cy="13" r="1.5" fill="currentColor" />
         </svg>
       </button>
-      {open && <Menu items={items} within={ref} onClose={close} />}
+      {open && <Menu items={items} within={ref} onClose={close} ref={menuRef} />}
     </div>
   )
 }

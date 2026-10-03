@@ -224,8 +224,46 @@ button {
   min-height: 0;
 }
 
+/* the pane's title, and New at its end, over the rows' ⋮ buttons; as tall
+   as the preview's toolbar */
+.card-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  height: 35px;
+  padding: 0 8px 0 12px;
+}
+
+.card-list-header h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.card-new {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 4px;
+  color: var(--muted);
+}
+
+.card-new:hover {
+  color: var(--text);
+  background: var(--panel-2);
+}
+
+/* shown once the whole list runs past the pane, and while it holds a search */
 .card-search {
-  margin: 8px;
+  padding: 0 8px 8px;
+}
+
+.card-search input {
+  width: 100%;
   padding: 6px 8px;
   background: var(--bg);
   border: 1px solid var(--border);
@@ -241,7 +279,12 @@ button {
   flex: 1;
 }
 
-.card-list li button {
+/* where the row's ⋮ is placed from */
+.card-list li {
+  position: relative;
+}
+
+.card-list [role='option'] {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -251,17 +294,18 @@ button {
   text-align: left;
 }
 
-.card-list li button:hover {
+/* lit with the pointer on its ⋮ too */
+.card-list li:hover [role='option'] {
   background: var(--panel-2);
 }
 
-.card-list li button.active {
+.card-list [role='option'].active {
   background: var(--panel-2);
   outline: 1px solid var(--border);
 }
 
 /* the row the arrow keys go on from, once they are in use */
-.card-list li button:focus-visible {
+.card-list [role='option']:focus-visible {
   outline: 1px solid var(--text);
   outline-offset: -1px;
 }
@@ -277,6 +321,69 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* a row's ⋮, over the end of the row; while its menu is open, above the rows
+   after it */
+.card-list .card-menu {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  z-index: auto;
+  opacity: 0;
+}
+
+.card-list .card-menu:has([aria-expanded='true']) {
+  z-index: 1;
+}
+
+/* shown on hover, on the open card, and while it has the keyboard's focus or
+   its menu is open, the name making room for it */
+.card-list
+  li:is(:hover, :has(.active, .card-menu :focus-visible, [aria-expanded='true']))
+  .card-menu {
+  opacity: 1;
+}
+
+.card-list
+  li:is(:hover, :has(.active, .card-menu :focus-visible, [aria-expanded='true']))
+  [role='option'] {
+  padding-right: 32px;
+}
+
+/* with no hover to show it, a touch screen always has it */
+@media (hover: none) {
+  .card-list .card-menu {
+    opacity: 1;
+  }
+
+  .card-list [role='option'] {
+    padding-right: 32px;
+  }
+}
+
+.card-list .card-menu > button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 4px;
+  color: var(--muted);
+}
+
+.card-list .card-menu > button:is(:hover, [aria-expanded='true']) {
+  color: var(--text);
+  background: var(--border);
+}
+
+.card-list li.drop-before {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.card-list li.drop-after {
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 /* ---- editor ---- */
@@ -344,7 +451,7 @@ button {
 /* on a touch screen, text fields at 16px: iOS zooms in on a smaller one when
    it is focused */
 @media (pointer: coarse) {
-  .card-search,
+  .card-search input,
   .editor-host .cm-editor {
     font-size: 16px;
   }
@@ -624,38 +731,6 @@ button {
   margin-left: 4px;
   font-size: 12px;
   color: var(--muted);
-}
-
-/* ---- card list actions ---- */
-.card-list-actions {
-  display: flex;
-  gap: 4px;
-  padding: 8px 8px 0;
-}
-
-.card-list-actions button {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: var(--muted);
-  background: var(--panel-2);
-}
-
-.card-list-actions button:hover:not(:disabled) {
-  color: var(--text);
-}
-
-.card-list-actions button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.card-list li.drop-before {
-  box-shadow: inset 0 2px 0 var(--accent);
-}
-
-.card-list li.drop-after {
-  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 /* ---- art manager ---- */
@@ -1378,6 +1453,12 @@ button {
 .menu-button .menu-items {
   top: calc(100% + 4px);
   right: 0;
+}
+
+/* over it instead, where there is no room for it below */
+.menu-button.up .menu-items {
+  top: auto;
+  bottom: calc(100% + 4px);
 }
 
 .menu-items {
