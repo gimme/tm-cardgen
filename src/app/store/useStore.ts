@@ -8,7 +8,7 @@ import {
   type Diagnostic,
 } from '../../core/index.ts'
 import { NEW_CARD_TEMPLATE } from '../samples/index.ts'
-import { nextSortIndex, type StoredCard } from '../storage/ProjectStore.ts'
+import { newCardId, nextSortIndex, type StoredCard } from '../storage/ProjectStore.ts'
 import { seedSamples } from '../storage/seed.ts'
 import type { Changes } from '../storage/tabSync.ts'
 import { copyName, extractName, withName } from './cardName.ts'
@@ -135,7 +135,7 @@ async function sameBytes(a: Blob, b: Blob): Promise<boolean> {
 export const useStore = create<AppState>((set, get) => {
   const addCard = async (name: string, yamlText: string) => {
     const entry: CardEntry = {
-      id: `card-${crypto.randomUUID()}`,
+      id: newCardId(),
       name,
       yamlText,
       sortIndex: nextSortIndex(get().cards),

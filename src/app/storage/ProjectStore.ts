@@ -62,3 +62,10 @@ export const DEFAULT_META: ProjectMeta = { schemaVersion: 1 }
 export function nextSortIndex(cards: { sortIndex: number }[]): number {
   return (cards[cards.length - 1]?.sortIndex ?? -1) + 1
 }
+
+/** a new card's id; not crypto.randomUUID, which a page served over plain
+ *  http, as the dev server is to another device on the LAN, doesn't have */
+export function newCardId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  return `card-${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`
+}

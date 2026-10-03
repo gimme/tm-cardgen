@@ -2,7 +2,7 @@ import { strFromU8, unzipSync } from 'fflate'
 import { checkCard } from '../../core/index.ts'
 import { extractName } from '../store/cardName.ts'
 import { getServices } from '../store/services.ts'
-import { nextSortIndex } from '../storage/ProjectStore.ts'
+import { newCardId, nextSortIndex } from '../storage/ProjectStore.ts'
 import { bytesToBlob } from './exportCommon.ts'
 import type { ProjectManifest } from './exportZip.ts'
 
@@ -79,7 +79,7 @@ export async function applyImport(preview: ImportPreview, mode: ImportMode): Pro
     deleteCards: replace ? cards.map((c) => c.id) : [],
     deleteArt: replace ? (await store.listArt()).map((a) => a.name) : [],
     putCards: preview.cards.map((card) => ({
-      id: `card-${crypto.randomUUID()}`,
+      id: newCardId(),
       name: card.name,
       yamlText: card.yamlText,
       sortIndex: sort++,
