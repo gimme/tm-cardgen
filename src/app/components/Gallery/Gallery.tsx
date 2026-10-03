@@ -55,6 +55,7 @@ export function Gallery() {
   const duplicateCard = useStore((s) => s.duplicateCard)
   const deleteCards = useStore((s) => s.deleteCards)
   const moveCards = useStore((s) => s.moveCards)
+  const setExportDialogOpen = useStore((s) => s.setExportDialogOpen)
   const [sel, setSel] = useState(NO_SELECTION)
   const [cardWidth, setCardWidth] = useState(storedWidth)
   // a card to scroll into view once it is there: a new copy, say
@@ -201,6 +202,10 @@ export function Gallery() {
                   ...(sel.ids.has(card.id)
                     ? []
                     : [{ label: 'Select', act: () => setSel((s) => toggled(s, card.id)) }]),
+                  {
+                    label: group ? `Export ${cardCount(group.length)}` : 'Export',
+                    act: () => setExportDialogOpen(true, group ?? [card.id]),
+                  },
                   // the selection's can't be duplicated
                   ...(group ? [] : [{ label: 'Duplicate', act: () => void duplicate(card.id) }]),
                   {
@@ -229,6 +234,7 @@ export function Gallery() {
       remove,
       duplicate,
       closeMenu,
+      setExportDialogOpen,
     ],
   )
 
@@ -262,6 +268,7 @@ export function Gallery() {
           {selecting ? (
             <SelectionActions
               actions={[
+                { label: 'Export', act: () => setExportDialogOpen(true, selected) },
                 // done with the selection once duplicated
                 ...(selected.length === 1
                   ? [

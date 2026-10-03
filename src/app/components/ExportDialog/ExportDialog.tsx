@@ -18,12 +18,24 @@ import {
 
 type Format = 'zip' | 'png' | 'pdf'
 
+// Opened for a selection in the gallery, the dialog exports those cards as
+// PNGs or a print sheet. Opened for every card, it also backs the whole
+// project up as a zip, and imports one.
 export function ExportDialog() {
   const cards = useStore((s) => s.cards)
+  const ids = useStore((s) => s.exportIds)
   const close = () => useStore.getState().setExportDialogOpen(false)
 
-  const [format, setFormat] = useState<Format>('zip')
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(cards.map((c) => c.id)))
+  // the selection's cards, in the order they show
+  const chosen = ids ? cards.filter((c) => ids.includes(c.id)) : cards
+  const formats: readonly Format[] = ids ? ['png', 'pdf'] : ['zip', 'png', 'pdf']
+  const title = !ids
+    ? 'Export / Import'
+    : chosen.length === 1
+      ? `Export ${chosen[0].name}`
+      : `Export ${chosen.length} cards`
+
+  const [format, setFormat] = useState<Format>(formats[0])
   const [dpi, setDpi] = useState<ExportDpi>(300)
   const [page, setPage] = useState<PageSize>('a4')
   const [spacing, setSpacing] = useState<Spacing>('gap')
@@ -32,15 +44,6 @@ export function ExportDialog() {
   const [error, setError] = useState<string>()
   const [importPreview, setImportPreview] = useState<ImportPreview>()
   const importInput = useRef<HTMLInputElement>(null)
-
-  const chosen = cards.filter((c) => selected.has(c.id))
-
-  const toggle = (id: string) => {
-    const next = new Set(selected)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    setSelected(next)
-  }
 
   const run = async () => {
     setError(undefined)
@@ -115,7 +118,7 @@ export function ExportDialog() {
     <div className="slideover-backdrop" onClick={close}>
       <div className="export-dialog" onClick={(e) => e.stopPropagation()}>
         <header>
-          <h2>Export / Import</h2>
+          <h2>{title}</h2>
           <span className="top-spacer" />
           <button type="button" onClick={close}>
             ✕
@@ -167,7 +170,7 @@ export function ExportDialog() {
           <>
             <div className="export-row">
               <span className="export-label">Format</span>
-              {(['zip', 'png', 'pdf'] as const).map((f) => (
+              {formats.map((f) => (
                 <label key={f}>
                   <input
                     type="radio"
@@ -249,34 +252,15 @@ export function ExportDialog() {
                     </div>
                   </>
                 )}
-                <div className="export-cards">
+                {!ids && (
                   <div className="export-row">
-                    <span className="export-label">Cards ({chosen.length})</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelected(new Set(cards.map((c) => c.id)))}
-                    >
-                      All
-                    </button>
-                    <button type="button" onClick={() => setSelected(new Set())}>
-                      None
-                    </button>
+                    <span className="export-label">Cards</span>
+                    <span>All {chosen.length}</span>
+                    <span className="export-hint">
+                      To export only some, select them in the gallery.
+                    </span>
                   </div>
-                  <ul>
-                    {cards.map((card) => (
-                      <li key={card.id}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={selected.has(card.id)}
-                            onChange={() => toggle(card.id)}
-                          />
-                          {card.name}
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                )}
               </>
             )}
             {format === 'zip' && (
@@ -307,33 +291,43 @@ export function ExportDialog() {
               >
                 Export
               </button>
-              <span className="top-spacer" />
-              <button type="button" disabled={busy} onClick={() => importInput.current?.click()}>
-                Import zip…
-              </button>
-              <input
-                ref={importInput}
-                type="file"
-                accept=".zip,application/zip"
-                hidden
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) void pickImport(file)
-                  e.target.value = ''
-                }}
-              />
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  if (
-                    confirm('Re-insert the bundled sample cards? Your own cards are not touched.')
-                  )
-                    void restoreSamples()
-                }}
-              >
-                Restore samples
-              </button>
+              {!ids && (
+                <>
+                  <span className="top-spacer" />
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => importInput.current?.click()}
+                  >
+                    Import zip…
+                  </button>
+                  <input
+                    ref={importInput}
+                    type="file"
+                    accept=".zip,application/zip"
+                    hidden
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) void pickImport(file)
+                      e.target.value = ''
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      if (
+                        confirm(
+                          'Re-insert the bundled sample cards? Your own cards are not touched.',
+                        )
+                      )
+                        void restoreSamples()
+                    }}
+                  >
+                    Restore samples
+                  </button>
+                </>
+              )}
             </div>
           </>
         )}

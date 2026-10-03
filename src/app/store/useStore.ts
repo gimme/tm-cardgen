@@ -45,6 +45,9 @@ export interface AppState {
   page: 'gallery' | 'editor'
   artManagerOpen: boolean
   exportDialogOpen: boolean
+  /** the cards the export dialog was opened for, a selection in the gallery;
+   *  every card when none */
+  exportIds?: readonly string[]
   /** bumps when art changes, so views depending on the art cache refresh */
   artVersion: number
   /** changes since the last zip export; drives the backup nudge */
@@ -89,7 +92,8 @@ export interface AppState {
 
   setPage(page: AppState['page']): void
   setArtManagerOpen(open: boolean): void
-  setExportDialogOpen(open: boolean): void
+  /** open for the cards `ids` names, or else for every card */
+  setExportDialogOpen(open: boolean, ids?: readonly string[]): void
 }
 
 /** how the current card's text stands with storage */
@@ -474,8 +478,8 @@ export const useStore = create<AppState>((set, get) => {
       set({ artManagerOpen: open })
     },
 
-    setExportDialogOpen(open) {
-      set({ exportDialogOpen: open })
+    setExportDialogOpen(open, ids) {
+      set({ exportDialogOpen: open, exportIds: open ? ids : undefined })
     },
   }
 })
