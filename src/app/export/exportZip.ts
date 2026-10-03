@@ -1,11 +1,14 @@
-// Zip round-trip: the project's backup format.
+// Zip round-trip: the project's backup format, and some cards' to import
+// into another project.
 //   project.json          formatVersion, card order
 //   cards/<slug>.yaml     one human-editable file per card (source verbatim)
 //   art/<filename>        art blobs
 import { strToU8, zipSync, type Zippable } from 'fflate'
+import { artFileOf } from '../../core/index.ts'
 import { getServices } from '../store/services.ts'
 import { cardSlugs } from '../store/cardName.ts'
 import { bytesToBlob } from './exportCommon.ts'
+import type { StoredArt } from '../storage/ProjectStore.ts'
 import type { CardEntry } from '../store/useStore.ts'
 
 export interface ProjectManifest {
@@ -15,16 +18,30 @@ export interface ProjectManifest {
   order: string[]
 }
 
+/** A backup of the whole project: every card, and every image stored, used
+ *  or not. */
 export async function exportProjectZip(cards: CardEntry[]): Promise<Blob> {
+  return zipOf(cards, await getServices().store.listArt())
+}
+
+/** The cards, and the images they name that are stored. */
+export async function exportCardsZip(cards: CardEntry[]): Promise<Blob> {
   const { store } = getServices()
+  const names = new Set(cards.flatMap((c) => artFileOf(c.yamlText) ?? []))
+  const named = await Promise.all([...names].map((name) => store.getArt(name)))
+  const art = named.filter((image) => image !== undefined)
+  return zipOf(cards, art)
+}
+
+async function zipOf(cards: CardEntry[], art: StoredArt[]): Promise<Blob> {
   const files: Zippable = {}
   const order = cardSlugs(cards.map((c) => c.name))
   cards.forEach((card, i) => {
     files[`cards/${order[i]}.yaml`] = strToU8(card.yamlText)
   })
 
-  for (const art of await store.listArt()) {
-    files[`art/${art.name}`] = new Uint8Array(await art.blob.arrayBuffer())
+  for (const image of art) {
+    files[`art/${image.name}`] = new Uint8Array(await image.blob.arrayBuffer())
   }
 
   const manifest: ProjectManifest = { formatVersion: 1, order }

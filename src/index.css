@@ -853,11 +853,6 @@ button {
   flex-shrink: 0;
 }
 
-.export-hint {
-  font-size: 12px;
-  color: var(--muted);
-}
-
 .export-progress {
   position: relative;
   height: 20px;

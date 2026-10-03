@@ -8,7 +8,7 @@ import {
   type ExportDpi,
 } from '../../export/exportPng.ts'
 import { exportPdfSheet, type PageSize, type Spacing } from '../../export/exportPdf.ts'
-import { exportProjectZip } from '../../export/exportZip.ts'
+import { exportCardsZip, exportProjectZip } from '../../export/exportZip.ts'
 import {
   applyImport,
   previewImport,
@@ -18,9 +18,9 @@ import {
 
 type Format = 'zip' | 'png' | 'pdf'
 
-// Opened for a selection in the gallery, the dialog exports those cards as
-// PNGs or a print sheet. Opened for every card, it also backs the whole
-// project up as a zip, and imports one.
+// Opened for a selection in the gallery, the dialog exports those cards.
+// Opened from the top bar, it exports every card, its zip a backup of the
+// whole project, and imports one.
 export function ExportDialog() {
   const cards = useStore((s) => s.cards)
   const ids = useStore((s) => s.exportIds)
@@ -28,14 +28,15 @@ export function ExportDialog() {
 
   // the selection's cards, in the order they show
   const chosen = ids ? cards.filter((c) => ids.includes(c.id)) : cards
-  const formats: readonly Format[] = ids ? ['png', 'pdf'] : ['zip', 'png', 'pdf']
   const title = !ids
     ? 'Export / Import'
     : chosen.length === 1
       ? `Export ${chosen[0].name}`
       : `Export ${chosen.length} cards`
 
-  const [format, setFormat] = useState<Format>(formats[0])
+  const [format, setFormat] = useState<Format>(ids ? 'png' : 'zip')
+  // every card's zip, which holds all the art, used or not
+  const backup = format === 'zip' && !ids
   const [dpi, setDpi] = useState<ExportDpi>(300)
   const [page, setPage] = useState<PageSize>('a4')
   const [spacing, setSpacing] = useState<Spacing>('gap')
@@ -53,9 +54,11 @@ export function ExportDialog() {
       if (chosen.length > 1) setProgress({ done, total: chosen.length })
     }
     try {
-      if (format === 'zip') {
+      if (backup) {
         downloadBlob(await exportProjectZip(cards), 'tm-cardgen-project.zip')
         await useStore.getState().markExported()
+      } else if (format === 'zip') {
+        downloadBlob(await exportCardsZip(chosen), 'tm-cardgen-cards.zip')
       } else if (format === 'png') {
         if (chosen.length === 1) {
           const [card] = chosen
@@ -170,7 +173,7 @@ export function ExportDialog() {
           <>
             <div className="export-row">
               <span className="export-label">Format</span>
-              {formats.map((f) => (
+              {(['zip', 'png', 'pdf'] as const).map((f) => (
                 <label key={f}>
                   <input
                     type="radio"
@@ -256,17 +259,20 @@ export function ExportDialog() {
                   <div className="export-row">
                     <span className="export-label">Cards</span>
                     <span>All {chosen.length}</span>
-                    <span className="export-hint">
-                      To export only some, select them in the gallery.
-                    </span>
                   </div>
                 )}
               </>
             )}
-            {format === 'zip' && (
+            {backup && (
               <p className="art-hint">
                 A backup of the whole project: one YAML file per card, plus all art. Import it here
                 to get the cards back.
+              </p>
+            )}
+            {format === 'zip' && !backup && (
+              <p className="art-hint">
+                One YAML file per card, plus the art they use. Import it to add the cards to a
+                project.
               </p>
             )}
 
@@ -286,7 +292,8 @@ export function ExportDialog() {
             <div className="dialog-actions">
               <button
                 type="button"
-                disabled={busy || (format !== 'zip' && chosen.length === 0)}
+                // a backup holds the art even without a card
+                disabled={busy || (chosen.length === 0 && !backup)}
                 onClick={() => void run()}
               >
                 Export
