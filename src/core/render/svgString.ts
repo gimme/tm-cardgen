@@ -155,7 +155,11 @@ export function renderSvgMarkup(layout: Pick<CardLayout, 'nodes'>, opts: RenderO
           const weight = fam.weight !== 400 ? ` font-weight="${fam.weight}"` : ''
           const spacing =
             (ls ? ` letter-spacing="${fmt(ls)}"` : '') + (ws ? ` word-spacing="${fmt(ws)}"` : '')
-          return `<text x="${fmt(node.x)}" y="${fmt(node.y)}" font-family="${esc(fam.family)}"${style}${weight} font-size="${fmt(node.size)}"${spacing} fill="${fill}" text-anchor="${node.anchor}"${stroke}${rotate}>${esc(node.text)}</text>`
+          // geometricPrecision: as wide as the layout measured it, at any size
+          // the card shows at. Otherwise Chrome sets the text at its size on
+          // screen, fitting the letters to the pixels, and a small card's
+          // runs wider.
+          return `<text x="${fmt(node.x)}" y="${fmt(node.y)}" font-family="${esc(fam.family)}"${style}${weight} font-size="${fmt(node.size)}"${spacing} text-rendering="geometricPrecision" fill="${fill}" text-anchor="${node.anchor}"${stroke}${rotate}>${esc(node.text)}</text>`
         }
         if (!node.outline) return draw(node.fill, '')
         // one copy per band, outermost first, stroked to the band's far edge;

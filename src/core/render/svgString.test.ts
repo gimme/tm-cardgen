@@ -128,4 +128,9 @@ describe('outlined text', () => {
     expect(strokes(m)).toEqual([])
     expect(m.match(/<text /g)).toHaveLength(1)
   })
+
+  it("sets every copy, the clip's too, as wide as the layout measured it, whatever size the card shows at", () => {
+    const m = renderSvgMarkup(text({ inset: 0.15, bands }), { resolveAsset })
+    expect(m.match(/<text [^>]*text-rendering="geometricPrecision"/g)).toHaveLength(4)
+  })
 })
