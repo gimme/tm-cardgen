@@ -61,9 +61,11 @@ export interface AppState {
   flushSave(): Promise<void>
 
   newCard(): Promise<void>
+  /** a copy of the card, right after it, which opens */
   duplicateCard(id: string): Promise<void>
   deleteCards(ids: string[]): Promise<void>
-  /** the cards the last delete took, back in their places */
+  /** the cards the last delete took, back in their places, after a card
+   *  that has come to one since */
   undoDelete(): Promise<void>
   dismissDeleted(): void
   /** the cards, in the order they show, together at `toIndex` among the
@@ -124,6 +126,19 @@ const sameCard = (a: CardEntry, b: CardEntry) =>
 
 const bySortIndex = (a: CardEntry, b: CardEntry) => a.sortIndex - b.sortIndex
 
+/** The cards that have to move down for each, in the order given, to come
+ *  past the one before it, at their new places: as few as can be, by as
+ *  little. */
+const makeWay = (cards: readonly CardEntry[]): CardEntry[] => {
+  const moved: CardEntry[] = []
+  let last = -Infinity
+  for (const card of cards) {
+    last = Math.max(card.sortIndex, last + 1)
+    if (last !== card.sortIndex) moved.push({ ...card, sortIndex: last })
+  }
+  return moved
+}
+
 /** two reads asked for, as one: with the images if either takes them in, and
  *  one given no changes does */
 const merged = (a?: Changes, b?: Changes): Changes | undefined =>
@@ -137,15 +152,24 @@ async function sameBytes(a: Blob, b: Blob): Promise<boolean> {
 }
 
 export const useStore = create<AppState>((set, get) => {
-  const addCard = async (name: string, yamlText: string) => {
+  /** A card added at `at` among the cards, at the end unless given, and
+   *  opened: one past the card before it, the cards after it moving down
+   *  where they are in its way. */
+  const addCard = async (name: string, yamlText: string, at = get().cards.length) => {
+    const { cards } = get()
     const entry: CardEntry = {
       id: newCardId(),
       name,
       yamlText,
-      sortIndex: nextSortIndex(get().cards),
+      sortIndex: nextSortIndex(cards.slice(0, at)),
     }
-    await getServices().store.write({ putCards: [{ ...entry, updatedAt: Date.now() }] })
-    withCards([entry])
+    const moved = makeWay(cards.toSpliced(at, 0, entry))
+    await getServices().store.write({
+      putCards: [{ ...entry, updatedAt: Date.now() }],
+      // the order alone: the text is as stored, or the editor's to save
+      updateCards: moved.map(({ id, sortIndex }) => ({ id, sortIndex })),
+    })
+    withCards([entry, ...moved])
     get().selectCard(entry.id)
   }
 
@@ -337,13 +361,14 @@ export const useStore = create<AppState>((set, get) => {
 
     async duplicateCard(sourceId) {
       const { cards } = get()
-      const source = cards.find((c) => c.id === sourceId)
-      if (!source) return
+      const at = cards.findIndex((c) => c.id === sourceId)
+      if (at === -1) return
+      const source = cards[at]
       const name = copyName(
         source.name,
         cards.map((c) => c.name),
       )
-      await addCard(name, withName(source.yamlText, name))
+      await addCard(name, withName(source.yamlText, name), at + 1)
     },
 
     async deleteCards(ids) {
@@ -355,12 +380,21 @@ export const useStore = create<AppState>((set, get) => {
     },
 
     async undoDelete() {
-      const { deleted } = get()
+      const { deleted, cards } = get()
       if (!deleted) return
+      // A card added since moves the cards after it down, maybe into one of
+      // their places: each goes after a card in its place, stored so, or
+      // storage would order the two its own way.
+      const moved = makeWay([...cards, ...deleted].sort(bySortIndex))
       const updatedAt = Date.now()
-      await getServices().store.write({ putCards: deleted.map((c) => ({ ...c, updatedAt })) })
+      await getServices().store.write({
+        putCards: deleted.map((c) => ({ ...c, updatedAt })),
+        // the order alone, after the puts: the text is as stored, or the
+        // editor's to save
+        updateCards: moved.map(({ id, sortIndex }) => ({ id, sortIndex })),
+      })
       set({ deleted: undefined })
-      withCards(deleted)
+      withCards([...deleted, ...moved])
     },
 
     dismissDeleted() {

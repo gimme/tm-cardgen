@@ -224,11 +224,12 @@ it('adds a card from the header, which opens and takes the focus', async () => {
   expect(where().focus).toBe('New Card')
 })
 
-it("duplicates a row's card from its menu, the copy opening and taking the focus", async () => {
+it("duplicates a row's card from its menu, the copy listed right after it, opening and taking the focus", async () => {
   await click('ant')
-  await pick('cat', 'Duplicate')
-  await opened('cat (1)')
-  expect(where().focus).toBe('cat (1)')
+  await pick('bee', 'Duplicate')
+  await opened('bee (1)')
+  expect(rows().map((b) => b.textContent)).toEqual(['ant', 'bee', 'bee (1)', 'cat', 'dog'])
+  expect(where().focus).toBe('bee (1)')
 })
 
 it("deletes a row's card from its menu, the open card staying open", async () => {
