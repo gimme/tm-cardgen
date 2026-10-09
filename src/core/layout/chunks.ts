@@ -3,7 +3,7 @@
 import { HALO } from '../frame/halo.ts'
 import { COLON, SLASH, slashWidth } from '../frame/operators.ts'
 import type { Pt } from '../frame/paths.ts'
-import { ICONS, type IconDef } from '../icons.ts'
+import { BADGE, ICONS, type IconDef } from '../icons.ts'
 import type { IconToken, Operator, RichTextItem, Stack } from '../spec/richtext.ts'
 import type { Requirement, Row } from '../spec/types.ts'
 import { COMMON, PROD_BOX } from './frames.ts'
@@ -68,11 +68,23 @@ const boxStyle = (scale: number): ElementStyle => ({
 const RULES_INK = '#111'
 
 // ---- icons ---------------------------------------------------------------
-/** the icon's own drawing: its vector markup, or its image */
-function iconNode(def: IconDef, x: number, y: number, w: number, h: number): LayoutNode {
-  return def.vector
+/** the icon's own drawing: its vector markup, or its image, and its badge */
+function iconNodes(def: IconDef, x: number, y: number, w: number, h: number): LayoutNode[] {
+  const own: LayoutNode = def.vector
     ? { kind: 'vector', icon: def.vector, x, y, w, h }
     : { kind: 'image', asset: { type: 'asset', path: def.file }, x, y, w, h }
+  if (!def.badge) return [own]
+  const badge = ICONS[def.badge]
+  const d = BADGE * h
+  return [
+    own,
+    ...iconNodes(badge, x + w - (d * badge.aspect) / 2, y + h / 4 - d / 2, d * badge.aspect, d),
+  ]
+}
+
+/** how far a badge sticks out past the icon's right edge */
+function badgeReach(def: IconDef, h: number): number {
+  return def.badge ? (BADGE * h * ICONS[def.badge].aspect) / 2 : 0
 }
 
 /** the number or X drawn on an inscribed icon, centered in its box; the
@@ -97,9 +109,9 @@ export function iconSample(name: string, inscription?: string): Chunk {
   const def = ICONS[name]
   const h = def.h
   const w = h * def.aspect
-  const nodes = [iconNode(def, 0, 0, w, h)]
+  const nodes = iconNodes(def, 0, 0, w, h)
   if (def.inscribed) nodes.push(inscriptionNode(inscription ?? 'X', w, h, h))
-  return { w, h, nodes }
+  return { w: w + badgeReach(def, h), h, nodes }
 }
 
 // ---- chunk machinery -----------------------------------------------------
@@ -297,7 +309,8 @@ export class Engine {
       ix = iy = counted
       nodes.push({ kind: 'halo', shape: def.halo, x: ix, y: iy, w, h, scale })
     }
-    nodes.push(iconNode(def, ix, iy, w, h))
+    nodes.push(...iconNodes(def, ix, iy, w, h))
+    boxW += badgeReach(def, h)
     if (item.inscription !== undefined) nodes.push(inscriptionNode(item.inscription, boxW, boxH, h))
     // a note hangs off the box's top-right corner (a ring's counted share
     // included), moved by the icon's own fix-up (icons.ts)

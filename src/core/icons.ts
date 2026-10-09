@@ -22,6 +22,9 @@ interface IconMeta {
   /** where the asterisk hangs off this icon, mm right and down of the
    *  default: flush against the box's right edge, centered on its top edge */
   noteAt?: [dx: number, dy: number]
+  /** another icon pinned on this tile's top-right corner, sticking out of
+   *  the hexagon like greenery's oxygen disc (BADGE) */
+  badge?: string
 }
 
 export type IconDef = IconMeta &
@@ -57,6 +60,9 @@ export const NOTE_GAP = 0.7
 const RECT_NOTE: [number, number] = [NOTE_GAP, 0]
 /** beside a triangle the asterisk comes in over the slope, and down a bit */
 const TRIANGLE_NOTE: [number, number] = [-1.5, 0.6]
+/** a tile's badge is centered on the hexagon's upper-right corner, this
+ *  share of the tile's height across */
+export const BADGE = 0.36
 
 // Body heights in mm, measured on the printed cards. The cube is the unit
 // (6.7, every printing).
@@ -90,7 +96,7 @@ export const ICONS: Record<string, IconDef> = {
   // tiles
   city: { file: T + 'city.png', aspect: HEX, h: TALL, halo: 'hexagon' },
   ocean: { file: T + 'ocean.png', aspect: HEX, h: TALL, halo: 'hexagon' },
-  // greenery and the off-world city carry a badge past the hexagon's right edge
+  // greenery carries its badge past the hexagon's right edge
   greenery: { file: T + 'greenery.png', aspect: 492 / 478, h: TALL, halo: 'hexagon' },
   'greenery-no-oxygen': {
     file: T + 'greenery_no_O2.png',
@@ -114,7 +120,14 @@ export const ICONS: Record<string, IconDef> = {
     noteAt: TRIANGLE_NOTE,
   },
   'empty-tile': { file: T + 'empty.png', aspect: HEX, h: TALL, halo: 'hexagon' },
-  'offworld-city': { file: T + 'off-world_city.png', aspect: 496 / 477, h: TALL, halo: 'hexagon' },
+  // the city with the space tag for its badge
+  'offworld-city': {
+    file: T + 'city.png',
+    aspect: HEX,
+    h: TALL,
+    halo: 'hexagon',
+    badge: 'space-tag',
+  },
 
   // global parameters
   // the disc prints at 0.93 of the thermometer

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { layoutCard, titleSize, type LayoutContext } from './layout.ts'
 import { OPERATOR_TEXT_SIZE } from './chunks.ts'
 import { HALO } from '../frame/halo.ts'
-import { ICONS, NOTE_GAP } from '../icons.ts'
+import { BADGE, ICONS, NOTE_GAP } from '../icons.ts'
 import { COLON, SLASH, slashWidth } from '../frame/operators.ts'
 import { ACTION, COMMON, NUM_TYPE, TITLE_SIZE, TITLE_STYLES, TITLE_TRACKING } from './frames.ts'
 import type { CardLayout, LayoutNode, TextNode } from './model.ts'
@@ -334,6 +334,20 @@ describe('rows', () => {
     expect(dx).toBeLessThan(0)
     expect(star.x).toBeCloseTo(tile.x + tile.w + dx, 5)
     expect(star.y + star.h / 2).toBeCloseTo(tile.y + dy, 5)
+  })
+
+  it("pins the off-world city's space tag on the city's upper-right corner", () => {
+    const layout = layoutCard(card({ body: [row('{offworld-city *}')] }), ctx)
+    expect(layout.warnings).toEqual([])
+    const [city] = icons(layout, 'city')
+    const [tag] = icons(layout, 'space')
+    expect(city.w).toBeCloseTo(city.h * ICONS.city.aspect)
+    expect(tag.w).toBeCloseTo(BADGE * city.h)
+    expect(tag.x + tag.w / 2).toBeCloseTo(city.x + city.w)
+    expect(tag.y + tag.h / 2).toBeCloseTo(city.y + city.h / 4)
+    // drawn over the city, and part of its box: the asterisk hangs off the tag
+    expect(layout.nodes.indexOf(tag)).toBeGreaterThan(layout.nodes.indexOf(city))
+    expect(vectors(layout, 'asterisk')[0].x).toBeCloseTo(tag.x + tag.w, 5)
   })
 
   it("hangs the asterisk off a red icon's box: the ring's counted share, not its edge", () => {
