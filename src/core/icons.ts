@@ -59,8 +59,10 @@ const P = 'parties/'
 
 /** a regular hexagon's width from its height */
 const HEX = Math.sqrt(3) / 2
-/** tiles and the thermometer print at one height */
+/** the hexagon tiles and the thermometer print at one height */
 const TALL = 9.3
+/** the colony and trade triangles print shorter */
+const TRIANGLE = 8.15
 /** the see-rules asterisk, at the printed arm length */
 const STAR = asteriskBox()
 /** a rectangular icon (a cube, the coin, TR, the card) stands the asterisk
@@ -116,7 +118,7 @@ export const ICONS: Record<string, IconDef> = {
   colony: {
     file: T + 'colony.png',
     aspect: 373 / 324,
-    h: TALL,
+    h: TRIANGLE,
     halo: 'triangle',
     noteAt: TRIANGLE_NOTE,
   },
@@ -124,7 +126,7 @@ export const ICONS: Record<string, IconDef> = {
   trade: {
     file: T + 'trade.png',
     aspect: 374 / 324,
-    h: TALL,
+    h: TRIANGLE,
     halo: 'triangle',
     noteAt: TRIANGLE_NOTE,
   },
