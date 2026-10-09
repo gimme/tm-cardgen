@@ -1,7 +1,7 @@
 // Rich text measured into chunks: a chunk is a block of layout primitives
 // with its size. The Engine builds them; layout.ts places them on the card.
 import { HALO } from '../frame/halo.ts'
-import { COLON, SLASH, slashWidth } from '../frame/operators.ts'
+import { COLON, SLASH, slashEdges, slashWidth } from '../frame/operators.ts'
 import type { Pt } from '../frame/paths.ts'
 import { BADGE, ICONS, type IconDef } from '../icons.ts'
 import type { IconToken, Operator, RichTextItem, Stack } from '../spec/richtext.ts'
@@ -18,6 +18,11 @@ export const LINE_GAP = 2.0
 const TOKEN_GAP = 1.0
 /** between separate elements */
 const GROUP_GAP = 2.0
+/** where slanted ink faces slanted ink (the slash, a triangle), the gap
+ *  times this between them where they come nearest: converging edges read
+ *  closer than they measure. Half again, as Ceres Tech Market and Colonial
+ *  Envoys print the slash before the colony. */
+const SLANT_GAP = 1.5
 /** directive text, the bare words: mm em, lead between lines, and the
  *  extra mm on every letter gap and every space (negative tightens) */
 const DIRECTIVE = { size: 2.65, lineSpace: 0.75, tracking: -0.06, wordSpacing: -0.1 }
@@ -131,7 +136,28 @@ export interface Chunk {
   /** the corner a note hangs off, from this chunk's top-left: the mark's
    *  left edge there, its center level with it. Absent, the top-right. */
   noteCorner?: Pt
+  /** the ink's sides where they slant inside the box, as x down the box,
+   *  top (y 0) to bottom (y h). Absent, the box's own sides. */
+  edges?: Edges
 }
+
+/** a chunk's left and right ink edges, each a polyline down its box */
+interface Edges {
+  left: Pt[]
+  right: Pt[]
+}
+
+/** the triangle standing in its box: apex at the top's middle, base along the foot */
+const triangleEdges = (w: number, h: number): Edges => ({
+  left: [
+    [w / 2, 0],
+    [0, h],
+  ],
+  right: [
+    [w / 2, 0],
+    [w, h],
+  ],
+})
 
 export function shift(nodes: LayoutNode[], dx: number, dy: number): LayoutNode[] {
   return nodes.map((n) => {
@@ -166,7 +192,34 @@ function noteOffset(host: Chunk, note: Chunk): Pt {
 function between(a: Chunk, b: Chunk, tight: number, loose: number): number {
   if (hosts(a, b)) return noteOffset(a, b)[0] - a.w
   if (a.spacer || b.spacer) return 0
-  return a.group !== undefined && a.group === b.group ? tight : loose
+  const gap = a.group !== undefined && a.group === b.group ? tight : loose
+  return gap - tuck(a, b, gap)
+}
+
+/** the edge's x at height y, along the segment spanning it */
+function edgeX(edge: Pt[], y: number): number {
+  let i = 1
+  while (i < edge.length - 1 && edge[i][1] < y) i++
+  const [[x0, y0], [x1, y1]] = [edge[i - 1], edge[i]]
+  return y1 === y0 ? x1 : x0 + ((y - y0) / (y1 - y0)) * (x1 - x0)
+}
+
+/** How much closer two slanted neighbours stand than their boxes say: the
+ *  least room their edges leave across the height they share, less the
+ *  slant's extra gap. Both chunks center on each other, as a line sets them. */
+function tuck(a: Chunk, b: Chunk, gap: number): number {
+  if (!a.edges || !b.edges) return 0
+  const [ya, yb] = [a.h / 2, b.h / 2]
+  const half = Math.min(ya, yb)
+  // the room between straight segments is least at one of their ends
+  const ys = [
+    -half,
+    half,
+    ...a.edges.right.map(([, y]) => y - ya),
+    ...b.edges.left.map(([, y]) => y - yb),
+  ].filter((y) => Math.abs(y) <= half)
+  const room = (y: number) => a.w - edgeX(a.edges!.right, y + ya) + edgeX(b.edges!.left, y + yb)
+  return Math.max(0, Math.min(...ys.map(room)) - (SLANT_GAP - 1) * gap)
 }
 
 function gapsAcross(chunks: Chunk[], tight: number, loose: number): number {
@@ -316,7 +369,14 @@ export class Engine {
     // included), moved by the icon's own fix-up (icons.ts)
     const [dx, dy] = def.noteAt ?? [0, 0]
     const noteCorner: Pt = [boxW + dx * scale, dy * scale]
-    return { w: boxW, h: boxH, nodes, noteCorner, ...(def.note && { note: true }) }
+    return {
+      w: boxW,
+      h: boxH,
+      nodes,
+      noteCorner,
+      ...(def.note && { note: true }),
+      ...(def.halo === 'triangle' && { edges: triangleEdges(boxW, boxH) }),
+    }
   }
 
   /** boxed by its ink so it centers like an icon; the minus is the en dash */
@@ -344,7 +404,12 @@ export class Engine {
 
   slashChunk(h: number): Chunk {
     const w = slashWidth(h)
-    return { w, h, nodes: [{ kind: 'vector', icon: 'slash', x: 0, y: 0, w, h }] }
+    return {
+      w,
+      h,
+      nodes: [{ kind: 'vector', icon: 'slash', x: 0, y: 0, w, h }],
+      edges: slashEdges(w, h),
+    }
   }
 
   colonChunk(em: number): Chunk {

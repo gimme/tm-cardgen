@@ -1,6 +1,7 @@
 // The colon, the slash and the asterisk, drawn as shapes. The plus, minus
 // and equals are font glyphs (layout.ts).
 import { fmt } from '../units.ts'
+import type { Pt } from './paths.ts'
 
 export const COLON = {
   /** dot diameter and top-to-bottom span, per mm of the operator em */
@@ -33,12 +34,28 @@ export const slashWidth = (h: number): number => {
 }
 
 /** a rectangle leaning right, ends square to its run, corners on the box's
- *  four sides */
-export function slashPath(x: number, y: number, w: number, h: number): string {
+ *  four sides: left, bottom, right, top */
+function slashCorners(w: number, h: number): [Pt, Pt, Pt, Pt] {
   const s = h * SLASH.stroke
   const dx = s * Math.cos(lean)
   const dy = s * Math.sin(lean)
-  return `M${fmt(x)} ${fmt(y + h - dy)}L${fmt(x + dx)} ${fmt(y + h)}L${fmt(x + w)} ${fmt(y + dy)}L${fmt(x + w - dx)} ${fmt(y)}Z`
+  return [
+    [0, h - dy],
+    [dx, h],
+    [w, dy],
+    [w - dx, 0],
+  ]
+}
+
+export function slashPath(x: number, y: number, w: number, h: number): string {
+  const [l, b, r, t] = slashCorners(w, h).map(([px, py]) => `${fmt(x + px)} ${fmt(y + py)}`)
+  return `M${l}L${b}L${r}L${t}Z`
+}
+
+/** the bar's left and right sides down its box, top to bottom (layout/chunks.ts) */
+export function slashEdges(w: number, h: number): { left: Pt[]; right: Pt[] } {
+  const [left, bottom, right, top] = slashCorners(w, h)
+  return { left: [top, left, bottom], right: [top, right, bottom] }
 }
 
 // The printed asterisk is a thin six-armed star: a pair of arms lies

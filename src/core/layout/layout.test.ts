@@ -961,6 +961,44 @@ describe('operators', () => {
       SLASH.h * COMMON.reqBar.prodScale,
     )
   })
+
+  describe('beside a triangle', () => {
+    // the bar's end, across and up its box
+    const lean = (SLASH.angle * Math.PI) / 180
+    const end = [Math.cos(lean), Math.sin(lean)].map((k) => SLASH.h * SLASH.stroke * k)
+    /** the triangle's left and right slopes at height y */
+    const slopes = (t: Box, y: number) => {
+      const half = (t.w / 2) * ((y - t.y) / t.h)
+      return [t.x + t.w / 2 - half, t.x + t.w / 2 + half]
+    }
+
+    it('tucks in, half again the gap between their ink where it comes nearest', () => {
+      const before = layoutCard(card({ body: [row('{2mc / colony}')] }), ctx)
+      const [bar] = slashes(before)
+      const [tile] = icons(before, 'colony')
+      // the boxes overlap; the bar's foot is nearest the slope
+      expect(tile.x).toBeLessThan(bar.x + bar.w)
+      const foot = bar.y + bar.h
+      expect(slopes(tile, foot)[0] - (bar.x + end[0])).toBeCloseTo(1.5)
+      const top = slopes(tile, bar.y + end[1])[0] - (bar.x + bar.w)
+      expect(top).toBeGreaterThan(1.5)
+      // after the triangle, the bar's left corner is nearest
+      const after = layoutCard(card({ body: [row('{colony / 2mc}')] }), ctx)
+      const [bar2] = slashes(after)
+      const [tile2] = icons(after, 'colony')
+      const corner = bar2.y + bar2.h - end[1]
+      expect(bar2.x - slopes(tile2, corner)[1]).toBeCloseTo(1.5)
+    })
+
+    it('keeps the gap between boxes beside a square neighbour', () => {
+      const layout = layoutCard(card({ body: [row('{2mc / plant}')] }), ctx)
+      const [bar] = slashes(layout)
+      const [coin] = vectors(layout, 'mc')
+      const [plant] = icons(layout, 'plant')
+      expect(bar.x - (coin.x + coin.w)).toBeCloseTo(1)
+      expect(plant.x - (bar.x + bar.w)).toBeCloseTo(1)
+    })
+  })
 })
 
 describe('the VP disc', () => {
