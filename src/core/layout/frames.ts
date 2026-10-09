@@ -91,8 +91,17 @@ export const COMMON = {
    *  text size/leading */
   flow: { w: 50.3 },
   rules: { size: 2.3, lineSpace: 0.5 },
-  /** flavor: bottom baseline and wrap widths (plain / beside VP) */
-  flavor: { bottom: 83.5, w: 53.7, vpW: 35.2, oneLineMax: 57.0, size: 2.4, lineH: 2.8 },
+  /** flavor: bottom baseline and wrap widths (plain / beside VP); the rule
+   *  over it is no shorter than ruleMin */
+  flavor: {
+    bottom: 83.5,
+    w: 53.7,
+    vpW: 35.2,
+    oneLineMax: 57.0,
+    size: 2.4,
+    lineH: 2.8,
+    ruleMin: 20,
+  },
 } as const
 
 /** the brown production box; patternTile is the mm period of production.png */

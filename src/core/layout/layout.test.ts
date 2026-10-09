@@ -794,6 +794,14 @@ describe('flavor text placement', () => {
       )
   })
 
+  it('keeps the rule over a short line to its minimum, centered', () => {
+    const short = separator(layoutCard(card({ flavor: 'Boom.' }), ctx))
+    expect(short.w).toBeCloseTo(COMMON.flavor.ruleMin)
+    expect(short.x + short.w / 2).toBeCloseTo(COMMON.cx)
+    const long = separator(layoutCard(card({ flavor: 'A line that sets a longer rule' }), ctx))
+    expect(long.w).toBeGreaterThan(COMMON.flavor.ruleMin)
+  })
+
   it('puts the rule above the top line', () => {
     const layout = layoutCard(card({ flavor: 'first\nsecond' }), ctx)
     expect(separator(layout).y).toBeLessThan(flavorLines(layout)[0].y)

@@ -213,9 +213,10 @@ function buildFlavor(flavor: string, vpPresent: boolean, m: TextMeasurer): Flavo
     baseline: F.bottom - (n - 1 - i) * F.lineH,
     w: fmeasure(text),
   }))
-  // the rule is centered on the block and never overlaps the disc
+  // the rule is centered on the block, a little shorter than its widest
+  // line but never too short to read as a rule, and never overlaps the disc
   const sepY = F.bottom - (n - 1) * F.lineH - Math.round(F.size * 11) / 10
-  const half = Math.max(...placed.map((l) => l.w)) / 2 - 2.1
+  const half = Math.max(F.ruleMin / 2, Math.max(...placed.map((l) => l.w)) / 2 - 2.1)
   const sepStart = Math.max(4.0, axis - half)
   let sepEnd = axis + half
   if (vpPresent) {
