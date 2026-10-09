@@ -5,7 +5,16 @@ import { CARD_H, CARD_W } from './units.ts'
 /** The any-player halo's shape (frame/halo.ts): a ring around the icon in
  *  its family's outline. An icon without one takes no halo. */
 export type HaloShape =
-  'box' | 'octagon' | 'hexagon' | 'circle' | 'card' | 'triangle' | 'bust' | 'thermometer'
+  | 'box'
+  | 'octagon'
+  | 'hexagon'
+  | 'circle'
+  | 'card'
+  | 'triangle'
+  | 'bust'
+  | 'thermometer'
+  | 'venus'
+  | 'star'
 
 interface IconMeta {
   /** width / height of the source image */
@@ -131,15 +140,15 @@ export const ICONS: Record<string, IconDef> = {
 
   // global parameters
   // the disc prints at 0.93 of the thermometer
-  oxygen: { file: G + 'oxygen.png', aspect: 1, h: 8.7 },
+  oxygen: { file: G + 'oxygen.png', aspect: 1, h: 8.7, halo: 'circle' },
   temperature: { file: G + 'temperature.png', aspect: 163 / 547, h: TALL, halo: 'thermometer' },
-  venus: { file: G + 'venus.png', aspect: 775 / 432, h: 5.3 },
+  venus: { file: G + 'venus.png', aspect: 775 / 432, h: 5.3, halo: 'venus' },
 
   // turmoil
   chairman: { file: M + 'chairman.png', aspect: 548 / 710, h: 7.2, halo: 'bust' },
   delegate: { file: M + 'delegate.png', aspect: 548 / 710, h: 7.2, halo: 'bust' },
   'party-leader': { file: M + 'party_leader.png', aspect: 548 / 710, h: 7.2, halo: 'bust' },
-  influence: { file: M + 'influence.png', aspect: 1080 / 1136, h: 8.9 },
+  influence: { file: M + 'influence.png', aspect: 1080 / 1136, h: 8.9, halo: 'star' },
 
   // punctuation: the action arrow and the see-rules asterisk. The operators
   // + - = : / are text, spec/richtext.ts

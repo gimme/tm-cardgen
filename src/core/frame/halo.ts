@@ -46,6 +46,31 @@ export function haloSpan(shape: HaloShape, w: number, h: number): number {
 /** head proportions as shares of the box: half-width, widest y, chin y */
 const BUST = { headRx: 0.329, wide: 0.225, chin: 0.61 }
 
+/** the venus icon's silhouette in shares of its box (venus.png): the
+ *  gauge's half ring and the V standing in it */
+const VENUS = {
+  /** the ring's center, down the box; its legs run on to the box's foot */
+  cy: 0.97,
+  /** the ring's radii, across and down */
+  outer: [0.5, 0.895],
+  inner: [0.289, 0.519],
+  /** the V clockwise from its left arm's top, the foot's rounding cut in two */
+  v: [
+    [0.234, 0.005],
+    [0.372, 0.005],
+    [0.5, 0.755],
+    [0.628, 0.005],
+    [0.766, 0.005],
+    [0.601, 0.954],
+    [0.546, 0.993],
+    [0.454, 0.993],
+    [0.399, 0.954],
+  ] as Pt[],
+}
+
+/** the influence star's notches, as a share of the way out to its tips */
+const STAR_NOTCH = 0.75
+
 /** the straight-sided shapes' corners, centered on the origin */
 function corners(shape: HaloShape, w: number, h: number): Pt[] | undefined {
   const hw = w / 2
@@ -89,6 +114,16 @@ function corners(shape: HaloShape, w: number, h: number): Pt[] | undefined {
         [hw, hh],
         [-hw, hh],
       ]
+    case 'star': {
+      // ten tips on a circle the box's height across, stretched so the
+      // widest pair meet its sides
+      const sx = hw / Math.sin((2 * Math.PI) / 5)
+      return Array.from({ length: 20 }, (_, k): Pt => {
+        const t = (k * Math.PI) / 10
+        const r = k % 2 === 0 ? 1 : STAR_NOTCH
+        return [sx * r * Math.sin(t), -hh * r * Math.cos(t)]
+      })
+    }
     default:
       return undefined
   }
@@ -119,6 +154,19 @@ export function haloPath(shape: HaloShape, w: number, h: number): string {
       const top = 0.63 * h - hh
       const r = [0.165 * w, 0.165 * w, 0.06 * w, 0.06 * w] as const
       return `${head} ${roundedRectPath(-hw, top, w, hh - top, 0, [...r])}`
+    }
+    case 'venus': {
+      // the ring and the V as two outlines: filled, they make the union, and
+      // stroked, the parts of each inside the other stay behind the icon
+      const at = (x: number, y: number) => `${fmt(x)} ${fmt(y)}`
+      const c = (VENUS.cy - 0.5) * h
+      const [ox, oy] = [VENUS.outer[0] * w, VENUS.outer[1] * h]
+      const [ix, iy] = [VENUS.inner[0] * w, VENUS.inner[1] * h]
+      const ring =
+        `M ${at(-ox, hh)} L ${at(-ox, c)} A ${at(ox, oy)} 0 0 1 ${at(ox, c)} L ${at(ox, hh)} ` +
+        `L ${at(ix, hh)} L ${at(ix, c)} A ${at(ix, iy)} 0 0 0 ${at(-ix, c)} L ${at(-ix, hh)} Z`
+      const v = VENUS.v.map(([x, y]): Pt => [(x - 0.5) * w, (y - 0.5) * h])
+      return `${ring} ${polyPath(v)}`
     }
     case 'thermometer': {
       const s = w / 4

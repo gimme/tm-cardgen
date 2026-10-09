@@ -675,6 +675,9 @@ describe('any-player halo', () => {
     expect(one('{red plant}').halo.shape).toBe('box')
     expect(one('{red city}').halo.shape).toBe('hexagon')
     expect(one('{red 3mc}').halo.shape).toBe('octagon')
+    expect(one('{red oxygen}').halo.shape).toBe('circle')
+    expect(one('{red venus}').halo.shape).toBe('venus')
+    expect(one('{red influence}').halo.shape).toBe('star')
   })
 
   it("sits on the icon box, drawn under the icon, at the icon's scale", () => {

@@ -25,7 +25,11 @@ describe('any-player halo', () => {
     expect(ICONS.card.halo).toBe('card')
     expect(ICONS.temperature.halo).toBe('thermometer')
     expect(ICONS.fighter.halo).toBe('box')
-    for (const n of ['*', '->', 'oxygen', 'party-reds']) expect(ICONS[n].halo, n).toBeUndefined()
+    // the oxygen disc fills its box, so it rings like a tag
+    expect(ICONS.oxygen.halo).toBe('circle')
+    expect(ICONS.venus.halo).toBe('venus')
+    expect(ICONS.influence.halo).toBe('star')
+    for (const n of ['*', '->', 'party-reds']) expect(ICONS[n].halo, n).toBeUndefined()
   })
 
   it('centers the box on the origin', () => {
@@ -66,6 +70,33 @@ describe('any-player halo', () => {
   it('rounds the disc and the card', () => {
     expect(haloPath('circle', 6, 6)).toMatch(/^M -3 0 C /)
     expect(haloPath('card', 10, 14)).toContain(`a ${HALO.cardCorner * 10}`)
+  })
+
+  it('points the star ten ways, its tips on the box and its notches three quarters out', () => {
+    const v = verts(haloPath('star', 9.5, 10))
+    expect(v).toHaveLength(20)
+    expect(v[0]).toEqual([0, -5])
+    expect(v[10]).toEqual([0, 5])
+    expect(Math.max(...v.map(([x]) => x))).toBeCloseTo(4.75)
+    expect(Math.min(...v.map(([x]) => x))).toBeCloseTo(-4.75)
+    // the notch between the top tip and the next, on its way round
+    const t = Math.PI / 10
+    expect(v[1][1]).toBeCloseTo(-5 * 0.75 * Math.cos(t))
+  })
+
+  it('outlines venus as its half ring and the V standing in it', () => {
+    const [w, h] = [9.5, 5.3]
+    const d = haloPath('venus', w, h)
+    const [ring, v] = d.split(' Z').filter((p) => p.trim())
+    // the ring: an arc out to the box's sides and one back, its legs on the foot
+    expect(ring.match(/ A /g)).toHaveLength(2)
+    expect(ring).toMatch(/^M -4.75 2.65 /)
+    // the V: a polygon from the box's top to its foot
+    const corners = verts(v)
+    expect(corners).toHaveLength(9)
+    expect(Math.min(...corners.map(([, y]) => y))).toBeCloseTo(-h / 2, 1)
+    expect(Math.max(...corners.map(([, y]) => y))).toBeCloseTo(h / 2, 1)
+    for (const [x] of corners) expect(Math.abs(x)).toBeLessThan(w / 2)
   })
 
   it('builds the bust and the thermometer from two pieces each', () => {

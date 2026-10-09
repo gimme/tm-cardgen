@@ -68,7 +68,7 @@ describe('parseRichText', () => {
     expect(parseRichText('{plant plant red}').errors[0].message).toContain('right after it')
     expect(parseRichText('{red 3 plant}').errors[0].message).toContain('right after it')
     expect(parseRichText('{red} {plant}').errors[0].message).toContain('needs an icon')
-    for (const src of ['{red *}', '{red ->}', '{red oxygen}'])
+    for (const src of ['{red *}', '{red ->}', '{red party-reds}'])
       expect(parseRichText(src).errors[0].message, src).toContain('takes no halo')
     expect(parseRichText('{city big}').errors[0].message).toContain("unknown icon 'big'")
     // a name the registry inherits from Object is no icon either
